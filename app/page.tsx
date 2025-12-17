@@ -1,17 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import axios from 'axios';
 import { Search, Star, Film, Calendar } from 'lucide-react';
-import MovieModal from './components/MovieModal';
 
 export default function Home() {
-  const [movies, setMovies] = useState<any[]>([]); // Added type safety hint
+  // Removed duplicate useState for movies
   const [language, setLanguage] = useState('kn');
+  interface Movie {
+    id: number;
+    title: string;
+    poster_path: string | null;
+    vote_average: number;
+    release_date: string;
+    [key: string]: any;
+  }
+
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(''); // New state for debounce
   const [loading, setLoading] = useState(false);
-  const [selectedMovie, setSelectedMovie] = useState(null);
   // TMDB Configuration
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   const API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
@@ -109,7 +118,8 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {movies.length > 0 ? (
             movies.map((movie) => (
-              <div key={movie.id} className="bg-gray-800 rounded-xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group">
+              <Link href={`/movie/${movie.id}`} key={movie.id}>
+                <div className="bg-gray-800 rounded-xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full">
                 {/* Poster */}
                 <div className="relative aspect-[2/3]">
                   <img
@@ -117,12 +127,8 @@ export default function Home() {
                     alt={movie.title}
                     className="w-full h-full object-cover"
                   />
-                  <div
-                    key={movie.id}
-                    onClick={() => setSelectedMovie(movie)} 
-                    className="bg-gray-800 rounded-xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group"
-                  >
-                    <span className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold">View Stats</span>
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold text-sm">View Full Details</span>
                   </div>
                 </div>
 
@@ -132,15 +138,16 @@ export default function Home() {
                   <div className="flex justify-between items-center text-sm text-gray-400 mt-2">
                     <span className="flex items-center gap-1">
                       <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      {movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}
+                      {movie.vote_average?.toFixed(1)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
-                      {movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}
+                      {movie.release_date?.split('-')[0]}
                     </span>
                   </div>
                 </div>
-              </div>
+                </div>
+              </Link>
             ))
           ) : (
             <div className="col-span-full text-center text-gray-500 mt-10">
@@ -148,13 +155,6 @@ export default function Home() {
             </div>
           )}
         </div>
-      )}
-      {/* Modal - Only renders if selectedMovie is not null */}
-      {selectedMovie && (
-        <MovieModal
-          movie={selectedMovie}
-          onClose={() => setSelectedMovie(null)}
-        />
       )}
     </div>
   );
