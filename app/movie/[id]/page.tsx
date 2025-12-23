@@ -3,16 +3,19 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard } from 'lucide-react';
+import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check } from 'lucide-react';
+import { useComparison } from '../../contexts/ComparisonContext';
 
 export default function MovieDetail() {
     const { id } = useParams(); // Get the movie ID from the URL (e.g., /movie/123)
     const router = useRouter();
+    const { addToCompare, isInComparison, canAddMore } = useComparison();
 
     const [movie, setMovie] = useState<any>(null);
     const [omdb, setOmdb] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [detailedAwards, setDetailedAwards] = useState([]);
+    const [isAddingToCompare, setIsAddingToCompare] = useState(false);
     // API Keys
     const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
     const OMDB_API_KEY = process.env.NEXT_PUBLIC_OMDB_API_KEY;
@@ -78,6 +81,35 @@ export default function MovieDetail() {
 
     const streamInfo = getStreaming();
 
+    const handleAddToCompare = () => {
+        if (!movie || !canAddMore || isInComparison(movie.id)) {
+            return;
+        }
+
+        setIsAddingToCompare(true);
+        
+        // Convert movie to ComparisonMovie format
+        const comparisonMovie = {
+            id: movie.id,
+            title: movie.title,
+            poster_path: movie.poster_path,
+            vote_average: movie.vote_average,
+            release_date: movie.release_date,
+            overview: movie.overview || '',
+            runtime: movie.runtime || 0,
+            genres: movie.genres || [],
+            budget: movie.budget || 0,
+            revenue: movie.revenue || 0,
+            backdrop_path: movie.backdrop_path,
+        };
+
+        addToCompare(comparisonMovie);
+        setIsAddingToCompare(false);
+    };
+
+    const inComparison = movie ? isInComparison(movie.id) : false;
+    const disabled = !canAddMore && !inComparison;
+
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100 font-sans pb-10">
 
@@ -141,6 +173,47 @@ export default function MovieDetail() {
                             <span className="text-white">{movie.revenue > 0 ? `$${(movie.revenue / 1000000).toFixed(1)}M` : 'N/A'}</span>
                         </div>
                     </div>
+
+                    {/* Compare Button */}
+                    <button
+                        onClick={handleAddToCompare}
+                        disabled={disabled || inComparison || isAddingToCompare}
+                        className={`
+                            flex items-center justify-center gap-2 w-full
+                            ${inComparison 
+                                ? 'bg-green-600 hover:bg-green-700' 
+                                : disabled 
+                                ? 'bg-gray-600 cursor-not-allowed opacity-50' 
+                                : 'bg-red-600 hover:bg-red-700'
+                            }
+                            text-white font-bold py-4 rounded-xl transition shadow-lg
+                            disabled:cursor-not-allowed
+                        `}
+                        title={
+                            inComparison 
+                                ? 'Already in comparison' 
+                                : disabled 
+                                ? 'Maximum 4 movies allowed' 
+                                : 'Add to comparison'
+                        }
+                    >
+                        {isAddingToCompare ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Adding...
+                            </>
+                        ) : inComparison ? (
+                            <>
+                                <Check className="w-5 h-5" />
+                                Added to Comparison
+                            </>
+                        ) : (
+                            <>
+                                <Scale className="w-5 h-5" />
+                                Add to Compare
+                            </>
+                        )}
+                    </button>
 
                     {/* Streaming Button */}
                     {streamInfo ? (
