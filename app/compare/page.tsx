@@ -6,6 +6,8 @@ import { ArrowLeft, X, Star, Calendar, Clock, DollarSign, Film } from 'lucide-re
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function ComparePage() {
   const router = useRouter();
@@ -99,27 +101,29 @@ export default function ComparePage() {
     return (
       <div className="min-h-screen bg-gray-900 text-white p-8">
         <div className="max-w-4xl mx-auto">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors"
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-8"
           >
             <ArrowLeft className="w-5 h-5" />
             Back
-          </button>
+          </Button>
 
-          <div className="bg-gray-800 rounded-xl p-12 text-center border border-gray-700">
-            <Film className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-300 mb-2">No Movies to Compare</h2>
-            <p className="text-gray-500 mb-6">
-              Add up to 4 movies from the homepage or movie detail pages to start comparing.
-            </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition"
-            >
-              Browse Movies
-            </Link>
-          </div>
+          <Card className="bg-gray-800 border-gray-700 p-12 text-center">
+            <CardContent className="flex flex-col items-center">
+              <Film className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-300 mb-2">No Movies to Compare</h2>
+              <p className="text-gray-500 mb-6">
+                Add up to 4 movies from the homepage or movie detail pages to start comparing.
+              </p>
+              <Button asChild>
+                <Link href="/" className="inline-flex items-center gap-2">
+                  Browse Movies
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -131,23 +135,25 @@ export default function ComparePage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div className="flex items-center gap-4">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
               Back
-            </button>
+            </Button>
             <h1 className="text-3xl font-bold text-red-500">Movie Comparison</h1>
             <span className="text-gray-400">({movies.length} of 4)</span>
           </div>
           {movies.length > 0 && (
-            <button
+            <Button
+              variant="ghost"
               onClick={clearCompare}
-              className="text-gray-400 hover:text-red-500 transition-colors text-sm"
+              className="text-gray-400 hover:text-red-500 text-sm"
             >
               Clear All
-            </button>
+            </Button>
           )}
         </div>
 
@@ -160,13 +166,15 @@ export default function ComparePage() {
                   <th className="p-4 text-left text-gray-400 font-semibold">Property</th>
                   {movies.map((movie, index) => (
                     <th key={movie.id} className="p-4 text-center relative min-w-[200px]">
-                      <button
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => removeFromCompare(movie.id)}
-                        className="absolute top-2 right-2 text-gray-500 hover:text-red-500 transition-colors"
+                        className="absolute top-2 right-2 text-gray-500 hover:text-red-500 h-6 w-6"
                         aria-label="Remove from comparison"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                       <div className="flex flex-col items-center gap-2">
                         {movie.poster_path ? (
                           <img
@@ -368,9 +376,9 @@ export default function ComparePage() {
           {movies.map((movie) => {
             const data = getMovieData(movie);
             return (
-              <div
+              <Card
                 key={movie.id}
-                className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden"
+                className="bg-gray-800 border-gray-700 overflow-hidden"
               >
                 <div className="p-4 flex items-start justify-between border-b border-gray-700">
                   <div className="flex items-center gap-3 flex-1">
@@ -400,14 +408,16 @@ export default function ComparePage() {
                       </div>
                     </div>
                   </div>
-                  <button
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     onClick={() => removeFromCompare(movie.id)}
-                    className="text-gray-500 hover:text-red-500 transition-colors"
+                    className="text-gray-500 hover:text-red-500 h-8 w-8"
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </div>
-                <div className="p-4 space-y-3 text-sm">
+                <CardContent className="p-4 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Release Date:</span>
                     <span className="text-white">
@@ -453,8 +463,8 @@ export default function ComparePage() {
                     <span className="text-gray-400">Overview:</span>
                     <p className="text-white mt-1">{truncateText(data.overview, 200)}</p>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

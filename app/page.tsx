@@ -2,14 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import axios from 'axios';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check } from 'lucide-react';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
 
+// Shadcn UI Imports
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+
 export default function Home() {
-  // Removed duplicate useState for movies
   const [language, setLanguage] = useState('kn');
   const { addToCompare, isInComparison, canAddMore } = useComparison();
+  
   interface Movie {
     id: number;
     title: string;
@@ -21,20 +30,18 @@ export default function Home() {
 
   const [movies, setMovies] = useState<Movie[]>([]);
   const [query, setQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState(''); // New state for debounce
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addingMovieId, setAddingMovieId] = useState<number | null>(null);
 
-  // Debounce Logic: Prevents API calls on every keystroke
+  // Debounce Logic
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedQuery(query);
-    }, 500); // Wait 500ms after user stops typing
+    }, 500);
 
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [query]);
 
   // Fetch Movies
@@ -69,30 +76,23 @@ export default function Home() {
     };
 
     fetchMovies();
-  }, [language, debouncedQuery]); // Only runs when language or the *debounced* query changes
+  }, [language, debouncedQuery]);
 
   const handleAddToCompare = async (e: React.MouseEvent, movie: Movie) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!canAddMore || isInComparison(movie.id)) {
-      return;
-    }
+    if (!canAddMore || isInComparison(movie.id)) return;
 
     setAddingMovieId(movie.id);
 
     try {
-      // Fetch full movie details via API route
       const response = await fetch(`/api/movies/${movie.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch movie details');
-      }
+      if (!response.ok) throw new Error('Failed to fetch movie details');
       
       const fullMovie = await response.json();
 
-      // Convert to ComparisonMovie format
-      const comparisonMovie = {
+      addToCompare({
         id: fullMovie.id,
         title: fullMovie.title,
         poster_path: fullMovie.poster_path,
@@ -104,9 +104,7 @@ export default function Home() {
         budget: fullMovie.budget || 0,
         revenue: fullMovie.revenue || 0,
         backdrop_path: fullMovie.backdrop_path,
-      };
-
-      addToCompare(comparisonMovie);
+      });
     } catch (error) {
       console.error('Error fetching movie details:', error);
     } finally {
@@ -115,43 +113,49 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    // CHANGE 1: Use standard background and foreground colors
+    <div className="min-h-screen bg-background text-foreground p-8">
+      
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div className="flex items-center gap-6">
-          <h1 className="text-3xl font-bold text-red-500 flex items-center gap-2">
+          {/* CHANGE 2: Use `text-primary` instead of hardcoded red */}
+          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
             <Film className="w-8 h-8" /> ABCD
           </h1>
-          <Link
-            href="/news"
-            className="flex items-center gap-2 text-gray-300 hover:text-red-500 transition-colors"
-          >
-            <Newspaper className="w-5 h-5" />
-            <span className="font-semibold">News</span>
-          </Link>
+          {/* CHANGE 3: Use `text-muted-foreground` and standard hover states */}
+          <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
+            <Link href="/news" className="flex items-center gap-2">
+              <Newspaper className="w-5 h-5" />
+              <span className="font-semibold">News</span>
+            </Link>
+          </Button>
         </div>
 
         <div className="flex gap-4 w-full md:w-auto">
           {/* Language Filter */}
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="bg-gray-800 border border-gray-700 p-3 rounded-lg focus:outline-none focus:border-red-500 text-white"
-          >
-            <option value="kn">Kannada</option>
-            <option value="te">Telugu</option>
-            <option value="ta">Tamil</option>
-            <option value="hi">Hindi</option>
-            <option value="ml">Malayalam</option>
-          </select>
+          <Select value={language} onValueChange={setLanguage}>
+            {/* CHANGE 4: Removed custom background colors (handled by component now) */}
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="kn">Kannada</SelectItem>
+              <SelectItem value="te">Telugu</SelectItem>
+              <SelectItem value="ta">Tamil</SelectItem>
+              <SelectItem value="hi">Hindi</SelectItem>
+              <SelectItem value="ml">Malayalam</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Search Bar */}
           <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-3.5 text-gray-400 h-5 w-5" />
-            <input
+            <Search className="absolute left-3 top-3 text-muted-foreground h-5 w-5 z-10" />
+            {/* CHANGE 5: Clean Input component */}
+            <Input
               type="text"
               placeholder="Search movies..."
-              className="w-full bg-gray-800 border border-gray-700 p-3 pl-10 rounded-lg focus:outline-none focus:border-red-500 text-white"
+              className="pl-10"
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
@@ -160,15 +164,30 @@ export default function Home() {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 mb-6 text-center">
-          <p className="text-red-400">{error}</p>
-        </div>
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Movie Grid */}
+      {/* Content Area */}
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Card key={i} className="overflow-hidden h-full">
+              <AspectRatio ratio={2 / 3}>
+                <Skeleton className="w-full h-full" />
+              </AspectRatio>
+              <CardContent className="p-4 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-3 w-1/4" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -179,82 +198,73 @@ export default function Home() {
               const disabled = !canAddMore && !inComparison;
 
               return (
-                <div key={movie.id} className="relative">
-                  <Link href={`/movie/${movie.id}`}>
-                    <div className="bg-gray-800 rounded-xl overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full">
-                    {/* Poster */}
-                    <div className="relative aspect-[2/3]">
-                      <img
-                        src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                        alt={movie.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold text-sm">View Full Details</span>
+                <div key={movie.id} className="relative h-full">
+                  <Link href={`/movie/${movie.id}`} className="block h-full">
+                    {/* CHANGE 6: Card uses default border/bg colors from theme */}
+                    <Card className="overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full flex flex-col">
+                      <div className="relative">
+                        <AspectRatio ratio={2 / 3}>
+                          <img
+                            src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                            alt={movie.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </AspectRatio>
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Badge variant="secondary" className="text-sm px-4 py-1">
+                            View Details
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Basic Info */}
-                    <div className="p-4">
-                      <h2 className="font-bold text-lg truncate" title={movie.title}>{movie.title}</h2>
-                      <div className="flex justify-between items-center text-sm text-gray-400 mt-2">
-                        <span className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          {movie.vote_average?.toFixed(1)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {movie.release_date?.split('-')[0]}
-                        </span>
-                      </div>
-                    </div>
-                    </div>
+                      <CardContent className="p-4 flex-grow flex flex-col justify-end">
+                        <h2 className="font-bold text-lg truncate mb-2" title={movie.title}>{movie.title}</h2>
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            {/* Note: Star color often kept explicit for UI, or use text-primary */}
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                            {movie.vote_average?.toFixed(1)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {movie.release_date?.split('-')[0]}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </Link>
 
                   {/* Compare Button */}
-                  <button
+                  <Button
+                    size="icon"
                     onClick={(e) => handleAddToCompare(e, movie)}
                     disabled={disabled || inComparison || isAdding}
+                    // CHANGE 7: Use variants for logic instead of manual classes
+                    variant={inComparison ? "default" : "secondary"}
                     className={`
-                      absolute top-2 right-2 z-10
-                      ${inComparison 
-                        ? 'bg-green-600 hover:bg-green-700' 
-                        : disabled 
-                        ? 'bg-gray-600 cursor-not-allowed opacity-50' 
-                        : 'bg-red-600 hover:bg-red-700'
-                      }
-                      text-white
-                      p-2
-                      rounded-full
-                      shadow-lg
-                      transition-all
-                      hover:scale-110
-                      active:scale-95
-                      disabled:cursor-not-allowed
-                      group/btn
+                      absolute top-2 right-2 z-10 rounded-full shadow-lg transition-all
+                      ${disabled ? 'opacity-50' : 'hover:scale-110 active:scale-95'}
                     `}
-                    title={
-                      inComparison 
-                        ? 'Already in comparison' 
-                        : disabled 
-                        ? 'Maximum 4 movies allowed' 
-                        : 'Add to comparison'
-                    }
+                    title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
                   >
                     {isAdding ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : inComparison ? (
                       <Check className="w-4 h-4" />
                     ) : (
                       <Scale className="w-4 h-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
               );
             })
           ) : (
-            <div className="col-span-full text-center text-gray-500 mt-10">
-              No movies found.
+            <div className="col-span-full mt-10">
+               <Alert className="text-center">
+                 <AlertDescription className="text-muted-foreground">
+                    No movies found matching your criteria.
+                 </AlertDescription>
+               </Alert>
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useComparison } from '../contexts/ComparisonContext';
 import { Scale } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function ComparisonFAB() {
   const router = useRouter();
@@ -34,20 +35,18 @@ export default function ComparisonFAB() {
   if (!isVisible) return null;
 
   return (
-    <button
+    <Button
+      size="icon"
       onClick={handleClick}
       className={`
         fixed bottom-6 right-6 z-50
-        bg-red-600 hover:bg-red-700
-        text-white
+        h-16 w-16
         rounded-full
-        p-4
         shadow-2xl
         transition-all
         duration-300
         hover:scale-110
         active:scale-95
-        flex items-center justify-center
         group
         ${shouldPulse ? 'animate-pulse' : ''}
       `}
@@ -93,7 +92,7 @@ export default function ComparisonFAB() {
       >
         Compare {count} movie{count !== 1 ? 's' : ''}
       </span>
-    </button>
+    </Button>
   );
 }
 
