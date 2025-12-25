@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check, AlertCircle } from 'lucide-react';
 import { useComparison } from '../../contexts/ComparisonContext';
+import WatchlistButton from '../../components/WatchlistButton';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -268,6 +269,16 @@ export default function MovieDetail() {
                             </>
                         )}
                     </Button>
+
+                    {/* Watchlist Button */}
+                    {movie && (
+                        <WatchlistButton
+                            movieId={movie.id}
+                            movieTitle={movie.title}
+                            variant="outline"
+                            className="w-full h-12 text-lg shadow-sm"
+                        />
+                    )}
 
                     {/* Streaming Button */}
                     {streamInfo ? (

@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User } from 'lucide-react';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User, BookmarkCheck } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
 import { useAuth } from './contexts/AuthContext';
+import WatchlistButton from './components/WatchlistButton';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -215,8 +216,19 @@ export default function Home() {
             </Link>
           </Button>
           
+          {/* Watchlist Link (if logged in) */}
+          {user && (
+            <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
+              <Link href="/watchlist" className="flex items-center gap-2">
+                <BookmarkCheck className="w-5 h-5" />
+                <span className="font-semibold">Watchlist</span>
+              </Link>
+            </Button>
+          )}
+          
           {/* Auth Buttons */}
           {!authLoading && (
+            
             <>
               {user ? (
                 <div className="flex items-center gap-3">
@@ -468,27 +480,35 @@ export default function Home() {
                     </Card>
                   </Link>
 
-                  {/* Compare Button */}
-                  <Button
-                    size="icon"
-                    onClick={(e) => handleAddToCompare(e, movie)}
-                    disabled={disabled || inComparison || isAdding}
-                    // CHANGE 7: Use variants for logic instead of manual classes
-                    variant={inComparison ? "default" : "secondary"}
-                    className={`
-                      absolute top-2 right-2 z-10 rounded-full shadow-lg transition-all
-                      ${disabled ? 'opacity-50' : 'hover:scale-110 active:scale-95'}
-                    `}
-                    title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
-                  >
-                    {isAdding ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : inComparison ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <Scale className="w-4 h-4" />
-                    )}
-                  </Button>
+                  <div className="absolute top-2 right-2 z-10 flex gap-2">
+                    <WatchlistButton
+                      movieId={movie.id}
+                      variant="secondary"
+                      size="icon"
+                      className="rounded-full shadow-lg"
+                    />
+                    {/* Compare Button */}
+                    <Button
+                      size="icon"
+                      onClick={(e) => handleAddToCompare(e, movie)}
+                      disabled={disabled || inComparison || isAdding}
+                      // CHANGE 7: Use variants for logic instead of manual classes
+                      variant={inComparison ? "default" : "secondary"}
+                      className={`
+                        rounded-full shadow-lg transition-all
+                        ${disabled ? 'opacity-50' : 'hover:scale-110 active:scale-95'}
+                      `}
+                      title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                    >
+                      {isAdding ? (
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : inComparison ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Scale className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               );
             })
