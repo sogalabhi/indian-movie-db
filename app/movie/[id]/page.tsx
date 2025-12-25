@@ -23,11 +23,9 @@ export default function MovieDetail() {
     const [movie, setMovie] = useState<any>(null);
     const [omdb, setOmdb] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [detailedAwards, setDetailedAwards] = useState([]);
     const [isAddingToCompare, setIsAddingToCompare] = useState(false);
-
-    const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-    const OMDB_API_KEY = process.env.NEXT_PUBLIC_OMDB_API_KEY;
 
     useEffect(() => {
         if (omdb?.imdbID) {
@@ -42,37 +40,58 @@ export default function MovieDetail() {
 
         const fetchData = async () => {
             setLoading(true);
+            setError(null);
+            console.log('Fetching movie data for ID:', id);
             try {
+                // Fetch TMDB data via API route with timeout
+                console.log('Calling API route:', `/api/movies/${id}?append_to_response=external_ids,watch/providers`);
                 const tmdbRes = await axios.get(
-                    `https://api.themoviedb.org/3/movie/${id}`,
-                    {
-                        params: {
-                            api_key: TMDB_API_KEY,
-                            append_to_response: 'external_ids,watch/providers',
-                        },
-                    }
+                    `/api/movies/${id}?append_to_response=external_ids,watch/providers`,
+                    { timeout: 15000 } // 15 second timeout
                 );
+                console.log('TMDB response received:', tmdbRes.status);
+                
+                if (tmdbRes.data.error) {
+                    throw new Error(tmdbRes.data.error);
+                }
+                
                 const tmdbData = tmdbRes.data;
                 setMovie(tmdbData);
 
+                // Fetch OMDB data via API route if IMDB ID is available
                 if (tmdbData.external_ids?.imdb_id) {
-                    const omdbRes = await axios.get(`https://www.omdbapi.com/`, {
-                        params: {
-                            apikey: OMDB_API_KEY,
-                            i: tmdbData.external_ids.imdb_id,
-                            plot: 'full'
-                        },
-                    });
-                    setOmdb(omdbRes.data);
+                    try {
+                        const omdbRes = await axios.get(
+                            `/api/omdb?imdbId=${tmdbData.external_ids.imdb_id}&plot=full`,
+                            { timeout: 10000 } // 10 second timeout
+                        );
+                        
+                        if (!omdbRes.data.error) {
+                            setOmdb(omdbRes.data);
+                        }
+                    } catch (omdbError) {
+                        console.error('Error fetching OMDB data:', omdbError);
+                        // Continue without OMDB data if it fails
+                    }
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error fetching data:', error);
+                console.error('Error response:', error.response);
+                
+                // Check if it's a timeout error from the API route (504 status)
+                if (error.response?.status === 504 || error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+                    setError(error.response?.data?.error || 'Request timed out. TMDB API is slow or unavailable. Please try again later.');
+                } else {
+                    const errorMsg = error.response?.data?.error || error.message || 'Failed to load movie details';
+                    setError(errorMsg);
+                }
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchData();
-    }, [id, TMDB_API_KEY, OMDB_API_KEY]);
+    }, [id]);
 
     // Loading State with Skeletons
     if (loading) return (
@@ -96,12 +115,12 @@ export default function MovieDetail() {
         </div>
     );
 
-    if (!movie) return (
+    if (error || !movie) return (
         <div className="min-h-screen bg-background flex items-center justify-center p-10">
             <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
-                <AlertDescription>Movie not found.</AlertDescription>
+                <AlertDescription>{error || 'Movie not found.'}</AlertDescription>
             </Alert>
         </div>
     );
@@ -149,8 +168,8 @@ export default function MovieDetail() {
 
             {/* 1. Hero Section (Backdrop) */}
             <div
-                className="relative h-[60vh] w-full bg-cover bg-center"
-                style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` }}
+                className="relative h-[60vh] w-full bg-cover bg-center bg-gray-900"
+                style={movie.backdrop_path ? { backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` } : {}}
             >
                 {/* Gradient Overlay fading to theme background */}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>

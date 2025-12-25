@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle } from 'lucide-react';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
 
 // Shadcn UI Imports
@@ -34,6 +34,18 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addingMovieId, setAddingMovieId] = useState<number | null>(null);
+
+  // Genre sections
+  const genres = [
+    { id: 28, name: 'Action' },
+    { id: 18, name: 'Drama' },
+    { id: 35, name: 'Comedy' },
+    { id: 53, name: 'Thriller' },
+    { id: 10749, name: 'Romance' },
+    { id: 878, name: 'Sci-Fi' },
+  ];
+
+  const [genreMovies, setGenreMovies] = useState<Record<number, { movies: Movie[]; loading: boolean; error: string | null }>>({});
 
   // Debounce Logic
   useEffect(() => {
@@ -76,6 +88,65 @@ export default function Home() {
     };
 
     fetchMovies();
+  }, [language, debouncedQuery]);
+
+  // Fetch Genre Movies (only when not searching)
+  useEffect(() => {
+    if (debouncedQuery) {
+      // Clear genre movies when searching
+      setGenreMovies({});
+      return;
+    }
+
+    const fetchGenreMovies = async () => {
+      // Initialize loading states
+      const initialGenreMovies: Record<number, { movies: Movie[]; loading: boolean; error: string | null }> = {};
+      genres.forEach((genre) => {
+        initialGenreMovies[genre.id] = { movies: [], loading: true, error: null };
+      });
+      setGenreMovies(initialGenreMovies);
+
+      // Fetch all genres in parallel
+      const promises = genres.map(async (genre) => {
+        try {
+          const response = await fetch(`/api/movies/genre?genre_id=${genre.id}&language=${language}&page=1`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Failed to fetch ${genre.name} movies`);
+          }
+
+          const data = await response.json();
+          return {
+            genreId: genre.id,
+            movies: data.results || [],
+            error: null,
+          };
+        } catch (error: any) {
+          console.error(`Error fetching ${genre.name} movies:`, error);
+          return {
+            genreId: genre.id,
+            movies: [],
+            error: error.message || 'Failed to load movies',
+          };
+        }
+      });
+
+      const results = await Promise.all(promises);
+      const updatedGenreMovies: Record<number, { movies: Movie[]; loading: boolean; error: string | null }> = {};
+
+      results.forEach(({ genreId, movies, error }) => {
+        updatedGenreMovies[genreId] = {
+          movies,
+          loading: false,
+          error,
+        };
+      });
+
+      setGenreMovies(updatedGenreMovies);
+    };
+
+    fetchGenreMovies();
   }, [language, debouncedQuery]);
 
   const handleAddToCompare = async (e: React.MouseEvent, movie: Movie) => {
@@ -170,6 +241,127 @@ export default function Home() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+
+      {/* Genre Sections - Only show when not searching */}
+      {!debouncedQuery && (
+        <div className="space-y-8 mb-12">
+          {genres.map((genre) => {
+            const genreData = genreMovies[genre.id];
+            const isLoading = genreData?.loading ?? true;
+            const genreMoviesList = genreData?.movies ?? [];
+
+            return (
+              <div key={genre.id} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-foreground">{genre.name} Movies</h2>
+                  {genreMoviesList.length > 0 && (
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/genre/${genre.id}?name=${genre.name}`} className="flex items-center gap-1">
+                        View All <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+                
+                {isLoading ? (
+                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden">
+                        <AspectRatio ratio={2 / 3}>
+                          <Skeleton className="w-full h-full" />
+                        </AspectRatio>
+                        <CardContent className="p-3">
+                          <Skeleton className="h-4 w-full mb-2" />
+                          <Skeleton className="h-3 w-2/3" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : genreData?.error ? (
+                  <Alert variant="destructive">
+                    <AlertDescription className="text-sm">{genreData.error}</AlertDescription>
+                  </Alert>
+                ) : genreMoviesList.length > 0 ? (
+                  <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+                    scrollSnapType: 'x mandatory'
+                  } as React.CSSProperties}>
+                    {genreMoviesList.map((movie) => {
+                      const inComparison = isInComparison(movie.id);
+                      const isAdding = addingMovieId === movie.id;
+                      const disabled = !canAddMore && !inComparison;
+
+                      return (
+                        <div key={movie.id} className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0" style={{ scrollSnapAlign: 'start' }}>
+                          <Link href={`/movie/${movie.id}`} className="block h-full">
+                            <Card className="overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full flex flex-col">
+                              <div className="relative">
+                                <AspectRatio ratio={2 / 3}>
+                                  <img
+                                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                                    alt={movie.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </AspectRatio>
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Badge variant="secondary" className="text-xs px-3 py-1">
+                                    View Details
+                                  </Badge>
+                                </div>
+                              </div>
+                              <CardContent className="p-3 flex-grow flex flex-col justify-end">
+                                <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
+                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                    {movie.vote_average?.toFixed(1)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {movie.release_date?.split('-')[0]}
+                                  </span>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                          <Button
+                            size="icon"
+                            onClick={(e) => handleAddToCompare(e, movie)}
+                            disabled={disabled || inComparison || isAdding}
+                            variant={inComparison ? "default" : "secondary"}
+                            className="absolute top-2 right-2 z-10 rounded-full shadow-lg transition-all h-7 w-7"
+                            title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                          >
+                            {isAdding ? (
+                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : inComparison ? (
+                              <Check className="w-3 h-3" />
+                            ) : (
+                              <Scale className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertDescription className="text-sm text-muted-foreground">
+                      No {genre.name.toLowerCase()} movies found.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Main Movies Grid Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-6">
+          {debouncedQuery ? 'Search Results' : 'All Movies'}
+        </h2>
+      </div>
 
       {/* Content Area */}
       {loading ? (
