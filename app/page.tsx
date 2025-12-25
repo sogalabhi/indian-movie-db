@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
+import { useAuth } from './contexts/AuthContext';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -16,8 +18,10 @@ import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 export default function Home() {
+  const router = useRouter();
   const [language, setLanguage] = useState('kn');
   const { addToCompare, isInComparison, canAddMore } = useComparison();
+  const { user, loading: authLoading, signOut } = useAuth();
   
   interface Movie {
     id: number;
@@ -183,6 +187,15 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
     // CHANGE 1: Use standard background and foreground colors
     <div className="min-h-screen bg-background text-foreground p-8">
@@ -201,6 +214,35 @@ export default function Home() {
               <span className="font-semibold">News</span>
             </Link>
           </Button>
+          
+          {/* Auth Buttons */}
+          {!authLoading && (
+            <>
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="w-4 h-4" />
+                    <span className="font-medium">{user.displayName || user.email?.split('@')[0] || 'User'}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    onClick={handleLogout}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <LogOut className="w-5 h-5 mr-2" />
+                    <span className="font-semibold">Logout</span>
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
+                  <Link href="/login" className="flex items-center gap-2">
+                    <LogIn className="w-5 h-5" />
+                    <span className="font-semibold">Login</span>
+                  </Link>
+                </Button>
+              )}
+            </>
+          )}
         </div>
 
         <div className="flex gap-4 w-full md:w-auto">
