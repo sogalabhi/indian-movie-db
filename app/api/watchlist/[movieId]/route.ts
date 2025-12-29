@@ -17,6 +17,10 @@ export async function GET(
       return NextResponse.json({ inWatchlist: false });
     }
 
+    if (!adminDb) {
+      return NextResponse.json({ inWatchlist: false });
+    }
+
     const { movieId } = await params;
     const docId = `${user.uid}_${movieId}`;
 
@@ -44,6 +48,13 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      );
+    }
+
+    if (!adminDb) {
+      return NextResponse.json(
+        { error: 'Database not initialized' },
+        { status: 500 }
       );
     }
 
