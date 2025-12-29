@@ -3,6 +3,12 @@ import { getCurrentUserFromRequest } from '@/lib/auth/server';
 import { adminDb } from '@/lib/firebase/server';
 import { getAuthCookie } from '@/lib/auth/cookies';
 
+interface WatchlistItemData {
+  userId: string;
+  movieId: string;
+  createdAt: any; // Firestore Timestamp or Date
+}
+
 /**
  * GET /api/watchlist
  * Get user's watchlist
@@ -19,16 +25,34 @@ export async function GET(request: NextRequest) {
     }
 
     // Get watchlist items for this user
+    // Note: We fetch without orderBy to avoid requiring a composite index,
+    // then sort in memory instead
+    if (!adminDb) {
+      return NextResponse.json(
+        { error: 'Database not initialized' },
+        { status: 500 }
+      );
+    }
+
     const watchlistRef = adminDb.collection('watchlists');
     const snapshot = await watchlistRef
       .where('userId', '==', user.uid)
-      .orderBy('createdAt', 'desc')
       .get();
 
-    const watchlist = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const watchlist = snapshot.docs
+      .map((doc) => {
+        const data = doc.data() as WatchlistItemData;
+        return {
+          id: doc.id,
+          ...data,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by createdAt descending (newest first)
+        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
+        return bTime - aTime;
+      });
 
     return NextResponse.json({ watchlist });
   } catch (error: any) {
@@ -62,6 +86,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Movie ID is required' },
         { status: 400 }
+      );
+    }
+
+    if (!adminDb) {
+      return NextResponse.json(
+        { error: 'Database not initialized' },
+        { status: 500 }
       );
     }
 
@@ -124,6 +155,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'Movie ID is required' },
         { status: 400 }
+      );
+    }
+
+    if (!adminDb) {
+      return NextResponse.json(
+        { error: 'Database not initialized' },
+        { status: 500 }
       );
     }
 
