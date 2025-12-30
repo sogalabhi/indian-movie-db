@@ -23,7 +23,7 @@ interface Review {
   id?: string;
   rating: number;
   body?: string;
-  watchedAt: Date | string;
+  watchedAt: Date | string | { toMillis: () => number } | { getTime: () => number };
 }
 
 interface RatingDialogProps {
@@ -53,18 +53,23 @@ export default function RatingDialog({
       try {
         // Handle Firestore Timestamp or Date objects
         let date: Date;
-        if (existingReview.watchedAt?.toMillis) {
+        const watchedAt = existingReview.watchedAt;
+        
+        if (typeof watchedAt === 'object' && 'toMillis' in watchedAt && typeof watchedAt.toMillis === 'function') {
           // Firestore Timestamp
-          date = new Date(existingReview.watchedAt.toMillis());
-        } else if (existingReview.watchedAt?.getTime) {
+          date = new Date(watchedAt.toMillis());
+        } else if (watchedAt instanceof Date) {
           // Date object
-          date = new Date(existingReview.watchedAt.getTime());
-        } else if (typeof existingReview.watchedAt === 'string') {
+          date = new Date(watchedAt.getTime());
+        } else if (typeof watchedAt === 'object' && 'getTime' in watchedAt && typeof watchedAt.getTime === 'function') {
+          // Date-like object
+          date = new Date(watchedAt.getTime());
+        } else if (typeof watchedAt === 'string') {
           // ISO string
-          date = new Date(existingReview.watchedAt);
+          date = new Date(watchedAt);
         } else {
           // Try direct conversion
-          date = new Date(existingReview.watchedAt as any);
+          date = new Date(watchedAt as any);
         }
         
         // Check if date is valid
@@ -112,14 +117,18 @@ export default function RatingDialog({
         // Handle date conversion safely
         try {
           let date: Date;
-          if (existingReview.watchedAt?.toMillis) {
-            date = new Date(existingReview.watchedAt.toMillis());
-          } else if (existingReview.watchedAt?.getTime) {
-            date = new Date(existingReview.watchedAt.getTime());
-          } else if (typeof existingReview.watchedAt === 'string') {
-            date = new Date(existingReview.watchedAt);
+          const watchedAt = existingReview.watchedAt;
+          
+          if (typeof watchedAt === 'object' && 'toMillis' in watchedAt && typeof watchedAt.toMillis === 'function') {
+            date = new Date(watchedAt.toMillis());
+          } else if (watchedAt instanceof Date) {
+            date = new Date(watchedAt.getTime());
+          } else if (typeof watchedAt === 'object' && 'getTime' in watchedAt && typeof watchedAt.getTime === 'function') {
+            date = new Date(watchedAt.getTime());
+          } else if (typeof watchedAt === 'string') {
+            date = new Date(watchedAt);
           } else {
-            date = new Date(existingReview.watchedAt as any);
+            date = new Date(watchedAt as any);
           }
           
           if (!isNaN(date.getTime())) {
