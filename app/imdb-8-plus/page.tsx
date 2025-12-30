@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Star, ArrowLeft, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -25,7 +25,7 @@ interface Movie {
   [key: string]: any;
 }
 
-export default function Imdb8PlusPage() {
+function Imdb8PlusPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToCompare, isInComparison, canAddMore } = useComparison();
@@ -317,6 +317,36 @@ export default function Imdb8PlusPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Imdb8PlusPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden glass-card animate-pulse">
+                <div className="h-[210px] md:h-[270px] lg:h-[300px]">
+                  <Skeleton className="w-full h-full" />
+                </div>
+                <CardContent className="p-3 md:p-4 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    }>
+      <Imdb8PlusPageContent />
+    </Suspense>
   );
 }
 
