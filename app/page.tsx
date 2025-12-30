@@ -202,33 +202,37 @@ export default function Home() {
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
       
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4 animate-fade-in">
-        <div className="flex items-center gap-3 md:gap-6 flex-wrap">
-          <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2">
-            <Film className="w-6 h-6 md:w-8 md:h-8" /> ABCD
-          </h1>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
-              <Link href="/news" className="flex items-center gap-2">
-                <Newspaper className="w-5 h-5" />
-                <span className="font-semibold">News</span>
-              </Link>
-            </Button>
+      <div className="space-y-4 mb-6 md:mb-8 animate-fade-in">
+        {/* First Row: Logo, Navigation, Login, Theme Toggle */}
+        <div className="flex flex-row justify-between items-center gap-4">
+          {/* Left: Logo and Desktop Navigation */}
+          <div className="flex items-center gap-3 md:gap-6 flex-shrink-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2 whitespace-nowrap">
+              <Film className="w-6 h-6 md:w-8 md:h-8" /> ABCD
+            </h1>
             
-            {user && (
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-4">
               <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
-                <Link href="/watchlist" className="flex items-center gap-2">
-                  <BookmarkCheck className="w-5 h-5" />
-                  <span className="font-semibold">Watchlist</span>
+                <Link href="/news" className="flex items-center gap-2">
+                  <Newspaper className="w-5 h-5" />
+                  <span className="font-semibold">News</span>
                 </Link>
               </Button>
-            )}
+              
+              {user && (
+                <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
+                  <Link href="/watchlist" className="flex items-center gap-2">
+                    <BookmarkCheck className="w-5 h-5" />
+                    <span className="font-semibold">Watchlist</span>
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
           
-          {/* Auth & Theme Toggle */}
-          <div className="flex items-center gap-2 ml-auto md:ml-0">
+          {/* Right: Auth & Theme Toggle */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {!authLoading && (
               <>
                 {user ? (
@@ -247,10 +251,10 @@ export default function Home() {
                     </Button>
                   </div>
                 ) : (
-                  <Button variant="ghost" asChild className="hidden md:flex text-muted-foreground hover:text-foreground transition-smooth">
-                    <Link href="/login" className="flex items-center gap-2">
-                      <LogIn className="w-5 h-5" />
-                      <span className="font-semibold">Login</span>
+                  <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth whitespace-nowrap">
+                    <Link href="/login" className="flex items-center gap-1.5 md:gap-2">
+                      <LogIn className="w-4 h-4 md:w-5 md:h-5" />
+                      <span className="font-semibold text-sm md:text-base">Login</span>
                     </Link>
                   </Button>
                 )}
@@ -260,7 +264,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex gap-3 md:gap-4 w-full md:w-auto">
+        {/* Second Row: Language Filter and Search */}
+        <div className="flex gap-3 md:gap-4 w-full">
           {/* Language Filter */}
           <Select value={language} onValueChange={setLanguage}>
             <SelectTrigger className="w-full md:w-[180px]">
