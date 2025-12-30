@@ -125,15 +125,15 @@ export default function WatchlistButton({
         size={size}
         onClick={handleToggle}
         disabled={loading}
-        className={className}
+        className={`${className} transition-smooth hover-scale`}
         title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : inWatchlist ? (
-          <BookmarkCheck className="h-4 w-4" />
+          <BookmarkCheck className="h-4 w-4 transition-transform duration-200" />
         ) : (
-          <Bookmark className="h-4 w-4" />
+          <Bookmark className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
         )}
         {size !== 'icon' && (
           <span className="ml-2">
@@ -143,7 +143,7 @@ export default function WatchlistButton({
       </Button>
 
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-        <DialogContent>
+        <DialogContent className="glass-modal animate-scale-in">
           <DialogHeader>
             <DialogTitle>Login Required</DialogTitle>
             <DialogDescription>
@@ -151,10 +151,10 @@ export default function WatchlistButton({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLoginDialog(false)}>
+            <Button variant="outline" onClick={() => setShowLoginDialog(false)} className="transition-smooth">
               Cancel
             </Button>
-            <Button onClick={handleLogin}>Login</Button>
+            <Button onClick={handleLogin} className="transition-smooth">Login</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

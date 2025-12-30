@@ -97,20 +97,20 @@ export default function MovieDetail() {
 
     // Loading State with Skeletons
     if (loading) return (
-        <div className="min-h-screen bg-background p-6 space-y-8">
-            <Skeleton className="h-[50vh] w-full rounded-xl" />
-            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="min-h-screen bg-background p-4 md:p-6 pb-20 md:pb-10 space-y-6 md:space-y-8">
+            <Skeleton className="h-[40vh] md:h-[50vh] w-full rounded-xl animate-pulse" />
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12">
                 <div className="space-y-4">
-                    <Skeleton className="h-[500px] w-full rounded-xl" />
+                    <Skeleton className="h-[400px] md:h-[500px] w-full rounded-xl" />
                     <Skeleton className="h-12 w-full" />
                     <Skeleton className="h-12 w-full" />
                 </div>
-                <div className="md:col-span-2 space-y-6">
-                    <Skeleton className="h-8 w-1/3" />
-                    <Skeleton className="h-32 w-full" />
+                <div className="md:col-span-2 space-y-4 md:space-y-6">
+                    <Skeleton className="h-6 md:h-8 w-1/3" />
+                    <Skeleton className="h-24 md:h-32 w-full" />
                     <div className="grid grid-cols-2 gap-4">
-                        <Skeleton className="h-24 w-full" />
-                        <Skeleton className="h-24 w-full" />
+                        <Skeleton className="h-20 md:h-24 w-full" />
+                        <Skeleton className="h-20 md:h-24 w-full" />
                     </div>
                 </div>
             </div>
@@ -118,8 +118,8 @@ export default function MovieDetail() {
     );
 
     if (error || !movie) return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-10">
-            <Alert variant="destructive">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-10 pb-20 md:pb-10">
+            <Alert variant="destructive" className="glass-card animate-fade-in">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{error || 'Movie not found.'}</AlertDescription>
@@ -166,11 +166,11 @@ export default function MovieDetail() {
     const disabled = !canAddMore && !inComparison;
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-sans pb-10">
+        <div className="min-h-screen bg-background text-foreground font-sans pb-20 md:pb-10">
 
             {/* 1. Hero Section (Backdrop) */}
             <div
-                className="relative h-[60vh] w-full bg-cover bg-center bg-gray-900"
+                className="relative h-[50vh] md:h-[60vh] w-full bg-cover bg-center bg-background"
                 style={movie.backdrop_path ? { backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` } : {}}
             >
                 {/* Gradient Overlay fading to theme background */}
@@ -181,67 +181,67 @@ export default function MovieDetail() {
                     size="icon"
                     variant="outline"
                     onClick={() => router.back()}
-                    className="absolute top-6 left-6 z-10 bg-background/50 hover:bg-background border-none rounded-full"
+                    className="absolute top-4 left-4 md:top-6 md:left-6 z-10 glass-card border-none rounded-full transition-smooth hover-scale"
                 >
-                    <ArrowLeft className="w-6 h-6" />
+                    <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
                 </Button>
 
                 {/* Title & Stats Overlay */}
-                <div className="absolute bottom-10 left-6 md:left-12 max-w-4xl">
-                    <h1 className="text-4xl md:text-6xl font-bold text-foreground drop-shadow-lg mb-4">{movie.title}</h1>
-                    <div className="flex flex-wrap gap-4 text-sm md:text-lg font-medium text-muted-foreground items-center">
+                <div className="absolute bottom-6 md:bottom-10 left-4 md:left-6 lg:left-12 max-w-4xl animate-fade-in">
+                    <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold text-foreground drop-shadow-lg mb-3 md:mb-4">{movie.title}</h1>
+                    <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm lg:text-lg font-medium text-muted-foreground items-center">
                         {/* OMDb Maturity Rating */}
                         {omdb?.Rated && omdb.Rated !== 'N/A' && (
-                            <Badge variant="secondary" className="border-border">
+                            <Badge variant="secondary" className="border-border text-xs">
                                 {omdb.Rated}
                             </Badge>
                         )}
-                        <Badge variant="destructive">
+                        <Badge variant="destructive" className="text-xs">
                             {movie.status}
                         </Badge>
                         <span>{movie.release_date.split('-')[0]}</span>
                         <span>{movie.runtime} min</span>
                         <span className="flex items-center gap-1 text-yellow-500 font-bold">
-                            <Star className="fill-current w-5 h-5" /> {omdb?.imdbRating || movie.vote_average.toFixed(1)}/10
+                            <Star className="fill-current w-4 h-4 md:w-5 md:h-5" /> {omdb?.imdbRating || movie.vote_average.toFixed(1)}/10
                         </span>
                     </div>
                 </div>
             </div>
 
             {/* 2. Main Content Grid */}
-            <div className="max-w-7xl mx-auto px-6 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12 -mt-10">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-12">
 
                 {/* Left Column: Poster & Financials */}
-                <div className="md:col-span-1 space-y-8">
-                    <div className="rounded-xl overflow-hidden shadow-2xl border border-border">
+                <div className="md:col-span-1 space-y-4 md:space-y-8 animate-slide-up">
+                    <div className="rounded-xl overflow-hidden shadow-2xl border border-border glass-card">
                         <AspectRatio ratio={2/3}>
                             <img
                                 src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`}
                                 alt={movie.title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-smooth"
                             />
                         </AspectRatio>
                     </div>
 
                     {/* Box Office Card */}
-                    <Card>
+                    <Card className="glass-card animate-scale-in" style={{ animationDelay: '100ms' }}>
                         <CardHeader>
-                            <CardTitle className="text-lg">Financials</CardTitle>
+                            <CardTitle className="text-base md:text-lg">Financials</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-3 md:space-y-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Box Office</span>
-                                <span className="font-bold text-primary">{omdb?.BoxOffice !== 'N/A' ? omdb?.BoxOffice : 'N/A'}</span>
+                                <span className="text-muted-foreground text-sm md:text-base">Box Office</span>
+                                <span className="font-bold text-primary text-sm md:text-base">{omdb?.BoxOffice !== 'N/A' ? omdb?.BoxOffice : 'N/A'}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Budget</span>
-                                <span>{movie.budget > 0 ? `$${(movie.budget / 1000000).toFixed(1)}M` : 'N/A'}</span>
+                                <span className="text-muted-foreground text-sm md:text-base">Budget</span>
+                                <span className="text-sm md:text-base">{movie.budget > 0 ? `$${(movie.budget / 1000000).toFixed(1)}M` : 'N/A'}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Revenue</span>
-                                <span>{movie.revenue > 0 ? `$${(movie.revenue / 1000000).toFixed(1)}M` : 'N/A'}</span>
+                                <span className="text-muted-foreground text-sm md:text-base">Revenue</span>
+                                <span className="text-sm md:text-base">{movie.revenue > 0 ? `$${(movie.revenue / 1000000).toFixed(1)}M` : 'N/A'}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -251,21 +251,22 @@ export default function MovieDetail() {
                         onClick={handleAddToCompare}
                         disabled={disabled || inComparison || isAddingToCompare}
                         variant={inComparison ? "default" : "outline"}
-                        className="w-full h-12 text-lg shadow-sm"
+                        className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card transition-smooth"
+                        style={{ animationDelay: '200ms' }}
                     >
                         {isAddingToCompare ? (
                             <>
-                                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                                <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                                 Adding...
                             </>
                         ) : inComparison ? (
                             <>
-                                <Check className="w-5 h-5 mr-2" />
+                                <Check className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                                 Added to Comparison
                             </>
                         ) : (
                             <>
-                                <Scale className="w-5 h-5 mr-2" />
+                                <Scale className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                                 Add to Compare
                             </>
                         )}
@@ -273,20 +274,23 @@ export default function MovieDetail() {
 
                     {/* Watchlist Button */}
                     {movie && (
-                        <WatchlistButton
-                            movieId={movie.id}
-                            movieTitle={movie.title}
-                            variant="outline"
-                            className="w-full h-12 text-lg shadow-sm"
-                        />
+                        <div style={{ animationDelay: '300ms' }} className="animate-scale-in">
+                            <WatchlistButton
+                                movieId={movie.id}
+                                movieTitle={movie.title}
+                                variant="outline"
+                                className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card"
+                            />
+                        </div>
                     )}
 
                     {/* Streaming Button */}
                     {streamInfo ? (
                         <Button
                             asChild
-                            variant="default" // Primary brand color (usually black/white in shadcn)
-                            className="w-full h-12 text-lg shadow-sm"
+                            variant="default"
+                            className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card transition-smooth"
+                            style={{ animationDelay: '400ms' }}
                         >
                             <a
                                 href={streamInfo.link}
@@ -294,92 +298,92 @@ export default function MovieDetail() {
                                 rel="noreferrer"
                                 className="flex items-center justify-center gap-2"
                             >
-                                <Tv className="w-6 h-6" /> Watch on {streamInfo.name}
+                                <Tv className="w-5 h-5 md:w-6 md:h-6" /> Watch on {streamInfo.name}
                             </a>
                         </Button>
                     ) : (
-                        <Alert className="text-center justify-center">
+                        <Alert className="text-center justify-center glass-card animate-scale-in" style={{ animationDelay: '400ms' }}>
                             <AlertDescription>Streaming Unavailable</AlertDescription>
                         </Alert>
                     )}
                 </div>
 
                 {/* Right Column: Detailed Info */}
-                <div className="md:col-span-2 space-y-10 pt-10 md:pt-20">
+                <div className="md:col-span-2 space-y-6 md:space-y-10 pt-6 md:pt-10 lg:pt-20 animate-fade-in">
 
                     {/* Plot */}
-                    <section>
-                        <h3 className="text-2xl font-bold text-primary mb-4 border-l-4 border-primary pl-4">Plot Synopsis</h3>
-                        <p className="text-lg text-muted-foreground leading-relaxed">{omdb?.Plot !== 'N/A' ? omdb?.Plot : movie.overview}</p>
+                    <section className="animate-slide-up">
+                        <h3 className="text-xl md:text-2xl font-bold text-primary mb-3 md:mb-4 border-l-4 border-primary pl-3 md:pl-4">Plot Synopsis</h3>
+                        <p className="text-base md:text-lg text-muted-foreground leading-relaxed">{omdb?.Plot !== 'N/A' ? omdb?.Plot : movie.overview}</p>
                     </section>
 
                     {/* Cast & Crew */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <Card>
-                            <CardContent className="p-6">
-                                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                                    <Clapperboard className="text-primary" /> Director
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+                        <Card className="glass-card hover-scale">
+                            <CardContent className="p-4 md:p-6">
+                                <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+                                    <Clapperboard className="text-primary w-5 h-5" /> Director
                                 </h3>
-                                <p className="text-lg">{omdb?.Director || 'N/A'}</p>
-                                <p className="text-sm text-muted-foreground mt-1">Writer: {omdb?.Writer || 'N/A'}</p>
+                                <p className="text-base md:text-lg">{omdb?.Director || 'N/A'}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground mt-1">Writer: {omdb?.Writer || 'N/A'}</p>
                             </CardContent>
                         </Card>
-                        <Card>
-                             <CardContent className="p-6">
-                                <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
-                                    <Users className="text-primary" /> Cast
+                        <Card className="glass-card hover-scale">
+                             <CardContent className="p-4 md:p-6">
+                                <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+                                    <Users className="text-primary w-5 h-5" /> Cast
                                 </h3>
-                                <p className="text-lg leading-relaxed">{omdb?.Actors || 'N/A'}</p>
+                                <p className="text-base md:text-lg leading-relaxed">{omdb?.Actors || 'N/A'}</p>
                             </CardContent>
                         </Card>
                     </section>
 
                     {/* Ratings Grid */}
-                    <section>
-                        <h3 className="text-2xl font-bold mb-6">Critic Ratings</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+                        <h3 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Critic Ratings</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                             {/* IMDb */}
-                            <Card className="text-center hover:bg-accent/50 transition-colors">
-                                <CardContent className="p-6">
-                                    <span className="block text-yellow-500 text-3xl font-bold mb-1">{omdb?.imdbRating || 'N/A'}</span>
-                                    <span className="text-sm text-muted-foreground">IMDb Rating</span>
-                                    <span className="block text-xs text-muted-foreground mt-1">{omdb?.imdbVotes} votes</span>
+                            <Card className="glass-card text-center hover-scale transition-smooth">
+                                <CardContent className="p-4 md:p-6">
+                                    <span className="block text-yellow-500 text-2xl md:text-3xl font-bold mb-1">{omdb?.imdbRating || 'N/A'}</span>
+                                    <span className="text-xs md:text-sm text-muted-foreground">IMDb Rating</span>
+                                    <span className="block text-[10px] md:text-xs text-muted-foreground mt-1">{omdb?.imdbVotes} votes</span>
                                 </CardContent>
                             </Card>
 
                             {/* Rotten Tomatoes */}
-                            <Card className="text-center hover:bg-accent/50 transition-colors">
-                                <CardContent className="p-6">
-                                    <span className="block text-destructive text-3xl font-bold mb-1">
+                            <Card className="glass-card text-center hover-scale transition-smooth">
+                                <CardContent className="p-4 md:p-6">
+                                    <span className="block text-destructive text-2xl md:text-3xl font-bold mb-1">
                                         {omdb?.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value || 'N/A'}
                                     </span>
-                                    <span className="text-sm text-muted-foreground">Rotten Tomatoes</span>
+                                    <span className="text-xs md:text-sm text-muted-foreground">Rotten Tomatoes</span>
                                 </CardContent>
                             </Card>
 
                             {/* Metascore */}
-                            <Card className="text-center hover:bg-accent/50 transition-colors">
-                                <CardContent className="p-6">
-                                    <span className="block text-primary text-3xl font-bold mb-1">{omdb?.Metascore !== 'N/A' ? omdb?.Metascore : '-'}</span>
-                                    <span className="text-sm text-muted-foreground">Metascore</span>
+                            <Card className="glass-card text-center hover-scale transition-smooth col-span-2 md:col-span-1">
+                                <CardContent className="p-4 md:p-6">
+                                    <span className="block text-primary text-2xl md:text-3xl font-bold mb-1">{omdb?.Metascore !== 'N/A' ? omdb?.Metascore : '-'}</span>
+                                    <span className="text-xs md:text-sm text-muted-foreground">Metascore</span>
                                 </CardContent>
                             </Card>
                         </div>
                     </section>
 
                     {/* Awards Summary */}
-                    <Card className="overflow-hidden relative border-primary/20">
+                    <Card className="glass-card overflow-hidden relative border-primary/20 animate-scale-in" style={{ animationDelay: '300ms' }}>
                          {/* Decorative Background Icon */}
                         <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                            <Trophy className="w-48 h-48 rotate-12" />
+                            <Trophy className="w-32 h-32 md:w-48 md:h-48 rotate-12" />
                         </div>
-                        <CardContent className="p-8 flex items-start gap-6 relative z-10">
-                            <div className="bg-primary/10 p-4 rounded-full">
-                                <Trophy className="w-10 h-10 text-primary" />
+                        <CardContent className="p-6 md:p-8 flex items-start gap-4 md:gap-6 relative z-10">
+                            <div className="bg-primary/10 p-3 md:p-4 rounded-full">
+                                <Trophy className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold mb-2">Awards & Recognition</h3>
-                                <p className="text-xl text-muted-foreground font-medium">
+                                <h3 className="text-xl md:text-2xl font-bold mb-2">Awards & Recognition</h3>
+                                <p className="text-base md:text-xl text-muted-foreground font-medium">
                                     {omdb?.Awards !== 'N/A' ? omdb?.Awards : 'No awards recorded.'}
                                 </p>
                             </div>
@@ -387,26 +391,26 @@ export default function MovieDetail() {
                     </Card>
                     
                     {/* Full Awards List */}
-                    <section>
+                    <section className="animate-slide-up" style={{ animationDelay: '400ms' }}>
                         <div className="flex items-center gap-2 mb-4">
-                            <Trophy className="text-primary w-6 h-6" />
-                            <h3 className="text-2xl font-bold">Full Awards List</h3>
+                            <Trophy className="text-primary w-5 h-5 md:w-6 md:h-6" />
+                            <h3 className="text-xl md:text-2xl font-bold">Full Awards List</h3>
                         </div>
 
                         {detailedAwards.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                                 {detailedAwards.map((item: any, index: number) => {
                                     if (item.award) {
                                         const isWin = item.status?.toLowerCase().includes('win') || item.status?.toLowerCase().includes('won');
                                         return (
-                                            <Card key={index} className="hover:bg-accent/50 transition-colors">
-                                                <CardContent className="p-4 flex justify-between items-center h-full">
-                                                    <div className="overflow-hidden">
-                                                        <p className="font-bold truncate" title={item.award}>{item.award}</p>
-                                                        <p className="text-sm text-muted-foreground truncate" title={item.category}>{item.category || ''}</p>
-                                                        {item.recipient && <p className="text-xs text-muted-foreground/70 truncate">{item.recipient}</p>}
+                                            <Card key={index} className="glass-card hover-scale transition-smooth animate-scale-in" style={{ animationDelay: `${index * 50}ms` }}>
+                                                <CardContent className="p-3 md:p-4 flex justify-between items-center h-full">
+                                                    <div className="overflow-hidden flex-1 min-w-0">
+                                                        <p className="font-bold truncate text-sm md:text-base" title={item.award}>{item.award}</p>
+                                                        <p className="text-xs md:text-sm text-muted-foreground truncate" title={item.category}>{item.category || ''}</p>
+                                                        {item.recipient && <p className="text-[10px] md:text-xs text-muted-foreground/70 truncate">{item.recipient}</p>}
                                                     </div>
-                                                    <Badge variant={isWin ? "default" : "secondary"} className="ml-2 whitespace-nowrap">
+                                                    <Badge variant={isWin ? "default" : "secondary"} className="ml-2 whitespace-nowrap text-xs flex-shrink-0">
                                                         {item.status || 'Winner'}
                                                     </Badge>
                                                 </CardContent>
@@ -415,9 +419,9 @@ export default function MovieDetail() {
                                     }
 
                                     return (
-                                        <Card key={index}>
-                                            <CardContent className="p-4">
-                                                <p className="text-sm text-muted-foreground">
+                                        <Card key={index} className="glass-card animate-scale-in" style={{ animationDelay: `${index * 50}ms` }}>
+                                            <CardContent className="p-3 md:p-4">
+                                                <p className="text-xs md:text-sm text-muted-foreground">
                                                     {item.raw || item}
                                                 </p>
                                             </CardContent>
@@ -426,7 +430,7 @@ export default function MovieDetail() {
                                 })}
                             </div>
                         ) : (
-                            <p className="text-muted-foreground italic">
+                            <p className="text-sm md:text-base text-muted-foreground italic">
                                 {omdb?.Awards && omdb.Awards !== 'N/A'
                                     ? omdb.Awards
                                     : "Loading detailed awards or none available..."}

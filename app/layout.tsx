@@ -4,6 +4,9 @@ import "./globals.css";
 import { ComparisonProvider } from "./contexts/ComparisonContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ComparisonFAB from "./components/ComparisonFAB";
+import BottomNav from "./components/BottomNav";
+import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,16 +29,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ComparisonProvider>
-            {children}
-            <ComparisonFAB />
-          </ComparisonProvider>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          <AuthProvider>
+            <ComparisonProvider>
+              {children}
+              <BottomNav />
+              <ComparisonFAB />
+              <Toaster />
+            </ComparisonProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

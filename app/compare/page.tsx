@@ -186,22 +186,22 @@ export default function ComparePage() {
 
   if (movies.length === 0) {
     return (
-      <div className="min-h-screen bg-background text-foreground p-8">
+      <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
         <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => router.back()} className="mb-8 pl-0 hover:bg-transparent">
+          <Button variant="ghost" onClick={() => router.back()} className="mb-6 md:mb-8 pl-0 hover:bg-transparent transition-smooth animate-fade-in">
             <ArrowLeft className="w-5 h-5 mr-2" /> Back
           </Button>
 
-          <Card className="p-12 text-center">
+          <Card className="glass-card p-8 md:p-12 text-center animate-scale-in">
             <CardContent className="flex flex-col items-center">
-              <div className="bg-muted p-6 rounded-full mb-6">
-                 <Film className="w-12 h-12 text-muted-foreground" />
+              <div className="bg-muted p-4 md:p-6 rounded-full mb-4 md:mb-6">
+                 <Film className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">No Movies to Compare</h2>
-              <p className="text-muted-foreground mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-2">No Movies to Compare</h2>
+              <p className="text-muted-foreground mb-6 text-sm md:text-base">
                 Add up to 4 movies from the homepage or movie detail pages to start comparing.
               </p>
-              <Button asChild>
+              <Button asChild className="transition-smooth">
                 <Link href="/">Browse Movies</Link>
               </Button>
             </CardContent>
@@ -212,56 +212,53 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
-      <div className="max-w-[1400px] mx-auto"> {/* Changed to specific max-width container */}
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
+      <div className="max-w-[1400px] mx-auto">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.back()}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 md:mb-6 gap-4 animate-fade-in">
+          <div className="flex items-center gap-3 md:gap-4">
+            <Button variant="outline" size="icon" onClick={() => router.back()} className="transition-smooth hover-scale">
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>
-                <h1 className="text-3xl font-bold text-primary">Movie Comparison</h1>
-                <p className="text-sm text-muted-foreground">Comparing {movies.length} of 4 movies</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-primary">Movie Comparison</h1>
+                <p className="text-xs md:text-sm text-muted-foreground">Comparing {movies.length} of 4 movies</p>
             </div>
           </div>
           {movies.length > 0 && (
-            <Button variant="destructive" onClick={clearCompare} size="sm">
+            <Button variant="destructive" onClick={clearCompare} size="sm" className="transition-smooth">
               Clear All
             </Button>
           )}
         </div>
 
         {/* Comparison Table - Desktop (Shadcn Table) */}
-        <div className="hidden md:block">
-          <div className="rounded-md border">
-            {/* CHANGE: Added table-fixed and w-full */}
+        <div className="hidden md:block animate-fade-in">
+          <div className="rounded-md border glass-card">
             <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  {/* CHANGE: Fixed width for labels (15-20%) */}
                   <TableHead className="w-[140px] bg-muted/50 align-middle">Property</TableHead>
                   
                   {movies.map((movie) => (
-                    // CHANGE: Removed min-w, added w-[21%] for equal distribution
                     <TableHead key={movie.id} className="w-[21.5%] text-center align-top p-4 relative">
                         <div className="group relative">
                             <Button
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => removeFromCompare(movie.id)}
-                                className="absolute -top-1 -right-1 h-6 w-6 text-muted-foreground hover:text-destructive z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute -top-1 -right-1 h-6 w-6 text-muted-foreground hover:text-destructive z-10 opacity-0 group-hover:opacity-100 transition-smooth"
                             >
                                 <X className="w-4 h-4" />
                             </Button>
-                            <div className="w-2/3 mx-auto mb-3 rounded-md overflow-hidden shadow-sm">
+                            <div className="w-2/3 mx-auto mb-3 rounded-md overflow-hidden shadow-sm glass-card">
                                 <AspectRatio ratio={2/3}>
                                     {movie.poster_path ? (
                                         <img
                                             src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
                                             alt={movie.title}
-                                            className="object-cover w-full h-full"
+                                            className="object-cover w-full h-full transition-smooth"
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -270,7 +267,7 @@ export default function ComparePage() {
                                     )}
                                 </AspectRatio>
                             </div>
-                            <Button variant="link" asChild className="p-0 h-auto font-bold text-base whitespace-normal text-center leading-tight">
+                            <Button variant="link" asChild className="p-0 h-auto font-bold text-base whitespace-normal text-center leading-tight transition-smooth">
                                 <Link href={`/movie/${movie.id}`}>{movie.title}</Link>
                             </Button>
                         </div>
@@ -418,7 +415,7 @@ export default function ComparePage() {
                   <TableCell className="font-medium bg-muted/50">Overview</TableCell>
                   {movies.map((movie) => (
                     <TableCell key={movie.id} className="text-xs text-muted-foreground p-2">
-                        <p className="whitespace-normal">{getMovieData(movie).overview || 'N/A'}</p>
+                        <p className="whitespace-normal leading-relaxed">{getMovieData(movie).overview || 'N/A'}</p>
                     </TableCell>
                   ))}
                    {Array.from({ length: 4 - movies.length }).map((_, i) => <TableCell key={i} className="text-center bg-muted/20">-</TableCell>)}
@@ -442,17 +439,17 @@ export default function ComparePage() {
                         {isLoading ? (
                           <span className="text-xs text-muted-foreground">Loading...</span>
                         ) : hasAwards ? (
-                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                          <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide">
                             {awards.slice(0, 5).map((award: any, index: number) => {
                               if (award.award) {
                                 const isWin = award.status?.toLowerCase().includes('win') || award.status?.toLowerCase().includes('won');
                                 return (
-                                  <div key={index} className="text-xs border rounded p-2 bg-muted/30">
+                                  <div key={index} className="text-xs border rounded p-2 glass-card transition-smooth hover:scale-[1.02]">
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="flex-1 min-w-0">
                                         <p className="font-semibold truncate" title={award.award}>{award.award}</p>
                                         {award.category && (
-                                          <p className="text-muted-foreground truncate" title={award.category}>{award.category}</p>
+                                          <p className="text-muted-foreground truncate text-[10px]" title={award.category}>{award.category}</p>
                                         )}
                                         {award.recipient && (
                                           <p className="text-muted-foreground/70 truncate text-[10px]">{award.recipient}</p>
@@ -466,7 +463,7 @@ export default function ComparePage() {
                                 );
                               }
                               return (
-                                <div key={index} className="text-xs text-muted-foreground p-2 border rounded">
+                                <div key={index} className="text-xs text-muted-foreground p-2 border rounded glass-card">
                                   {award.raw || award}
                                 </div>
                               );
@@ -491,45 +488,49 @@ export default function ComparePage() {
         </div>
 
         {/* Mobile View - Stacked Cards */}
-        <div className="md:hidden space-y-6">
-          {movies.map((movie) => {
+        <div className="md:hidden space-y-4">
+          {movies.map((movie, index) => {
             const data = getMovieData(movie);
             return (
-              <Card key={movie.id} className="overflow-hidden">
+              <Card 
+                key={movie.id} 
+                className="glass-card overflow-hidden animate-scale-in"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="flex items-start">
-                   <div className="w-32 h-48 flex-shrink-0">
+                   <div className="w-28 h-40 md:w-32 md:h-48 flex-shrink-0">
                     <AspectRatio ratio={2/3}>
                       {movie.poster_path ? (
                           <img
                           src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
                           alt={movie.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-smooth"
                           />
                       ) : (
                           <div className="w-full h-full bg-muted flex items-center justify-center">
-                            <Film className="w-8 h-8 text-muted-foreground" />
+                            <Film className="w-6 h-6 md:w-8 md:h-8 text-muted-foreground" />
                           </div>
                       )}
                     </AspectRatio>
                    </div>
-                   <div className="flex-1 p-4">
+                   <div className="flex-1 p-3 md:p-4">
                       <div className="flex justify-between items-start">
-                         <h3 className="font-bold text-lg leading-tight mb-2">
-                             <Link href={`/movie/${movie.id}`} className="hover:underline">{movie.title}</Link>
+                         <h3 className="font-bold text-base md:text-lg leading-tight mb-2">
+                             <Link href={`/movie/${movie.id}`} className="hover:underline transition-smooth">{movie.title}</Link>
                          </h3>
-                         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeFromCompare(movie.id)}>
+                         <Button size="icon" variant="ghost" className="h-6 w-6 transition-smooth hover-scale" onClick={() => removeFromCompare(movie.id)}>
                              <X className="w-4 h-4" />
                          </Button>
                       </div>
                       
                       <div className="space-y-1 mt-2">
-                        <div className="flex items-center gap-1 text-sm">
+                        <div className="flex items-center gap-1 text-xs md:text-sm">
                            <Star className="w-3 h-3 text-yellow-500 fill-current" />
                            <span className="font-semibold">{movie.vote_average?.toFixed(1)}</span>
-                           <span className="text-muted-foreground text-xs">(TMDB)</span>
+                           <span className="text-muted-foreground text-[10px] md:text-xs">(TMDB)</span>
                         </div>
                         {omdbData[movie.id]?.imdbRating && (
-                            <div className="flex items-center gap-1 text-sm">
+                            <div className="flex items-center gap-1 text-xs md:text-sm">
                                 <span className="font-bold bg-yellow-500 text-black px-1 rounded text-[10px]">IMDb</span>
                                 <span>{omdbData[movie.id].imdbRating}</span>
                             </div>
@@ -537,7 +538,7 @@ export default function ComparePage() {
                       </div>
                    </div>
                 </div>
-                <CardContent className="p-4 space-y-3 text-sm">
+                <CardContent className="p-3 md:p-4 space-y-3 text-xs md:text-sm">
                   <div>
                     <span className="text-muted-foreground block mb-1">Overview</span>
                     <p className="text-xs text-muted-foreground leading-relaxed">{data.overview || 'N/A'}</p>
@@ -554,7 +555,7 @@ export default function ComparePage() {
                     <span className="text-muted-foreground block mb-1">Genres</span>
                     <div className="flex flex-wrap gap-1">
                       {data.genres?.slice(0, 3).map((genre: any) => (
-                        <Badge key={genre.id || genre} variant="outline" className="text-xs">
+                        <Badge key={genre.id || genre} variant="outline" className="text-[10px] md:text-xs">
                           {genre.name || genre}
                         </Badge>
                       ))}
@@ -568,11 +569,11 @@ export default function ComparePage() {
                           <Trophy className="w-3 h-3 text-primary" /> Awards
                         </span>
                         {awardsData[movie.id]?.length > 0 ? (
-                          <div className="space-y-1 max-h-32 overflow-y-auto">
-                            {awardsData[movie.id].slice(0, 3).map((award: any, index: number) => {
+                          <div className="space-y-1 max-h-32 overflow-y-auto scrollbar-hide">
+                            {awardsData[movie.id].slice(0, 3).map((award: any, awardIndex: number) => {
                               if (award.award) {
                                 return (
-                                  <div key={index} className="text-xs border rounded p-1.5 bg-muted/30">
+                                  <div key={awardIndex} className="text-xs border rounded p-1.5 glass-card transition-smooth">
                                     <p className="font-semibold truncate">{award.award}</p>
                                     {award.category && <p className="text-muted-foreground text-[10px] truncate">{award.category}</p>}
                                   </div>

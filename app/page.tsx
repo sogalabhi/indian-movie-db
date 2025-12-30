@@ -7,6 +7,7 @@ import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, Che
 import { useComparison } from './contexts/ComparisonContext';
 import { useAuth } from './contexts/AuthContext';
 import WatchlistButton from './components/WatchlistButton';
+import { ThemeToggle } from './components/ThemeToggle';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -198,70 +199,71 @@ export default function Home() {
   };
 
   return (
-    // CHANGE 1: Use standard background and foreground colors
-    <div className="min-h-screen bg-background text-foreground p-8">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
       
       {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-        <div className="flex items-center gap-6">
-          {/* CHANGE 2: Use `text-primary` instead of hardcoded red */}
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
-            <Film className="w-8 h-8" /> ABCD
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 md:mb-8 gap-4 animate-fade-in">
+        <div className="flex items-center gap-3 md:gap-6 flex-wrap">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2">
+            <Film className="w-6 h-6 md:w-8 md:h-8" /> ABCD
           </h1>
-          {/* CHANGE 3: Use `text-muted-foreground` and standard hover states */}
-          <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
-            <Link href="/news" className="flex items-center gap-2">
-              <Newspaper className="w-5 h-5" />
-              <span className="font-semibold">News</span>
-            </Link>
-          </Button>
           
-          {/* Watchlist Link (if logged in) */}
-          {user && (
-            <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
-              <Link href="/watchlist" className="flex items-center gap-2">
-                <BookmarkCheck className="w-5 h-5" />
-                <span className="font-semibold">Watchlist</span>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
+              <Link href="/news" className="flex items-center gap-2">
+                <Newspaper className="w-5 h-5" />
+                <span className="font-semibold">News</span>
               </Link>
             </Button>
-          )}
-          
-          {/* Auth Buttons */}
-          {!authLoading && (
             
-            <>
-              {user ? (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="w-4 h-4" />
-                    <span className="font-medium">{user.displayName || user.email?.split('@')[0] || 'User'}</span>
+            {user && (
+              <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
+                <Link href="/watchlist" className="flex items-center gap-2">
+                  <BookmarkCheck className="w-5 h-5" />
+                  <span className="font-semibold">Watchlist</span>
+                </Link>
+              </Button>
+            )}
+          </div>
+          
+          {/* Auth & Theme Toggle */}
+          <div className="flex items-center gap-2 ml-auto md:ml-0">
+            {!authLoading && (
+              <>
+                {user ? (
+                  <div className="hidden md:flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <User className="w-4 h-4" />
+                      <span className="font-medium">{user.displayName || user.email?.split('@')[0] || 'User'}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      onClick={handleLogout}
+                      className="text-muted-foreground hover:text-foreground transition-smooth"
+                    >
+                      <LogOut className="w-5 h-5 mr-2" />
+                      <span className="font-semibold">Logout</span>
+                    </Button>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    onClick={handleLogout}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <LogOut className="w-5 h-5 mr-2" />
-                    <span className="font-semibold">Logout</span>
+                ) : (
+                  <Button variant="ghost" asChild className="hidden md:flex text-muted-foreground hover:text-foreground transition-smooth">
+                    <Link href="/login" className="flex items-center gap-2">
+                      <LogIn className="w-5 h-5" />
+                      <span className="font-semibold">Login</span>
+                    </Link>
                   </Button>
-                </div>
-              ) : (
-                <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground">
-                  <Link href="/login" className="flex items-center gap-2">
-                    <LogIn className="w-5 h-5" />
-                    <span className="font-semibold">Login</span>
-                  </Link>
-                </Button>
-              )}
-            </>
-          )}
+                )}
+              </>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
 
-        <div className="flex gap-4 w-full md:w-auto">
+        <div className="flex gap-3 md:gap-4 w-full md:w-auto">
           {/* Language Filter */}
           <Select value={language} onValueChange={setLanguage}>
-            {/* CHANGE 4: Removed custom background colors (handled by component now) */}
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Select language" />
             </SelectTrigger>
             <SelectContent>
@@ -275,12 +277,11 @@ export default function Home() {
 
           {/* Search Bar */}
           <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-3 text-muted-foreground h-5 w-5 z-10" />
-            {/* CHANGE 5: Clean Input component */}
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5 z-10" />
             <Input
               type="text"
               placeholder="Search movies..."
-              className="pl-10"
+              className="pl-10 transition-smooth"
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
@@ -305,11 +306,11 @@ export default function Home() {
             const genreMoviesList = genreData?.movies ?? [];
 
             return (
-              <div key={genre.id} className="space-y-4">
+              <div key={genre.id} className="space-y-3 md:space-y-4 animate-fade-in">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-foreground">{genre.name} Movies</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground">{genre.name} Movies</h2>
                   {genreMoviesList.length > 0 && (
-                    <Button variant="ghost" size="sm" asChild>
+                    <Button variant="ghost" size="sm" asChild className="transition-smooth">
                       <Link href={`/genre/${genre.id}?name=${genre.name}`} className="flex items-center gap-1">
                         View All <ChevronRight className="w-4 h-4" />
                       </Link>
@@ -318,12 +319,12 @@ export default function Home() {
                 </div>
                 
                 {isLoading ? (
-                  <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden">
-                        <AspectRatio ratio={2 / 3}>
+                      <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden glass-card animate-pulse">
+                        <div className="h-[210px] md:h-[270px]">
                           <Skeleton className="w-full h-full" />
-                        </AspectRatio>
+                        </div>
                         <CardContent className="p-3">
                           <Skeleton className="h-4 w-full mb-2" />
                           <Skeleton className="h-3 w-2/3" />
@@ -336,28 +337,34 @@ export default function Home() {
                     <AlertDescription className="text-sm">{genreData.error}</AlertDescription>
                   </Alert>
                 ) : genreMoviesList.length > 0 ? (
-                  <div className="flex gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
                     scrollSnapType: 'x mandatory'
                   } as React.CSSProperties}>
-                    {genreMoviesList.map((movie) => {
+                    {genreMoviesList.map((movie, index) => {
                       const inComparison = isInComparison(movie.id);
                       const isAdding = addingMovieId === movie.id;
                       const disabled = !canAddMore && !inComparison;
 
                       return (
-                        <div key={movie.id} className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0" style={{ scrollSnapAlign: 'start' }}>
+                        <div 
+                          key={movie.id} 
+                          className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
+                          style={{ 
+                            scrollSnapAlign: 'start',
+                            animationDelay: `${index * 50}ms`
+                          }}
+                        >
                           <Link href={`/movie/${movie.id}`} className="block h-full">
-                            <Card className="overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full flex flex-col">
-                              <div className="relative">
-                                <AspectRatio ratio={2 / 3}>
-                                  <img
-                                    src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                                    alt={movie.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </AspectRatio>
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Badge variant="secondary" className="text-xs px-3 py-1">
+                            <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
+                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                                <img
+                                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                                  alt={movie.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
                                     View Details
                                   </Badge>
                                 </div>
@@ -382,15 +389,15 @@ export default function Home() {
                             onClick={(e) => handleAddToCompare(e, movie)}
                             disabled={disabled || inComparison || isAdding}
                             variant={inComparison ? "default" : "secondary"}
-                            className="absolute top-2 right-2 z-10 rounded-full shadow-lg transition-all h-7 w-7"
+                            className="absolute top-2 right-2 z-10 rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
                             title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
                           >
                             {isAdding ? (
-                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                             ) : inComparison ? (
-                              <Check className="w-3 h-3" />
+                              <Check className="w-4 h-4" />
                             ) : (
-                              <Scale className="w-3 h-3" />
+                              <Scale className="w-4 h-4" />
                             )}
                           </Button>
                         </div>
@@ -411,21 +418,21 @@ export default function Home() {
       )}
 
       {/* Main Movies Grid Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-6">
+      <div className="mb-6 md:mb-8 animate-fade-in">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-6">
           {debouncedQuery ? 'Search Results' : 'All Movies'}
         </h2>
       </div>
 
       {/* Content Area */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
           {Array.from({ length: 10 }).map((_, i) => (
-            <Card key={i} className="overflow-hidden h-full">
-              <AspectRatio ratio={2 / 3}>
+            <Card key={i} className="overflow-hidden h-full glass-card animate-pulse">
+              <div className="h-[210px] md:h-[270px] lg:h-[300px]">
                 <Skeleton className="w-full h-full" />
-              </AspectRatio>
-              <CardContent className="p-4 space-y-2">
+              </div>
+              <CardContent className="p-3 md:p-4 space-y-2">
                 <Skeleton className="h-4 w-3/4" />
                 <div className="flex justify-between">
                   <Skeleton className="h-3 w-1/4" />
@@ -436,43 +443,44 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
           {movies.length > 0 ? (
-            movies.map((movie) => {
+            movies.map((movie, index) => {
               const inComparison = isInComparison(movie.id);
               const isAdding = addingMovieId === movie.id;
               const disabled = !canAddMore && !inComparison;
 
               return (
-                <div key={movie.id} className="relative h-full">
+                <div 
+                  key={movie.id} 
+                  className="relative h-full animate-scale-in"
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
                   <Link href={`/movie/${movie.id}`} className="block h-full">
-                    {/* CHANGE 6: Card uses default border/bg colors from theme */}
-                    <Card className="overflow-hidden hover:scale-105 transition-transform duration-200 cursor-pointer shadow-lg group h-full flex flex-col">
-                      <div className="relative">
-                        <AspectRatio ratio={2 / 3}>
-                          <img
-                            src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                            alt={movie.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </AspectRatio>
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Badge variant="secondary" className="text-sm px-4 py-1">
+                    <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
+                      <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden">
+                        <img
+                          src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                          alt={movie.title}
+                          className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                          style={{ objectFit: 'cover', objectPosition: 'center' }}
+                        />
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <Badge variant="secondary" className="text-xs md:text-sm px-3 md:px-4 py-1 glass-card">
                             View Details
                           </Badge>
                         </div>
                       </div>
 
-                      <CardContent className="p-4 flex-grow flex flex-col justify-end">
-                        <h2 className="font-bold text-lg truncate mb-2" title={movie.title}>{movie.title}</h2>
-                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                      <CardContent className="p-3 md:p-4 flex-grow flex flex-col justify-end">
+                        <h2 className="font-bold text-sm md:text-lg truncate mb-2" title={movie.title}>{movie.title}</h2>
+                        <div className="flex justify-between items-center text-xs md:text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            {/* Note: Star color often kept explicit for UI, or use text-primary */}
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                            <Star className="h-3 w-3 md:h-4 md:w-4 text-yellow-500 fill-current" />
                             {movie.vote_average?.toFixed(1)}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
+                            <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                             {movie.release_date?.split('-')[0]}
                           </span>
                         </div>
@@ -480,32 +488,27 @@ export default function Home() {
                     </Card>
                   </Link>
 
-                  <div className="absolute top-2 right-2 z-10 flex gap-2">
+                  <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
                     <WatchlistButton
                       movieId={movie.id}
                       variant="secondary"
                       size="icon"
-                      className="rounded-full shadow-lg"
+                      className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                     />
-                    {/* Compare Button */}
                     <Button
                       size="icon"
                       onClick={(e) => handleAddToCompare(e, movie)}
                       disabled={disabled || inComparison || isAdding}
-                      // CHANGE 7: Use variants for logic instead of manual classes
                       variant={inComparison ? "default" : "secondary"}
-                      className={`
-                        rounded-full shadow-lg transition-all
-                        ${disabled ? 'opacity-50' : 'hover:scale-110 active:scale-95'}
-                      `}
+                      className="rounded-full shadow-lg transition-smooth glass-card h-8 w-8 md:h-9 md:w-9 disabled:opacity-50"
                       title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
                     >
                       {isAdding ? (
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3 h-3 md:w-4 md:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       ) : inComparison ? (
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3 h-3 md:w-4 md:h-4" />
                       ) : (
-                        <Scale className="w-4 h-4" />
+                        <Scale className="w-3 h-3 md:w-4 md:h-4" />
                       )}
                     </Button>
                   </div>
@@ -513,8 +516,8 @@ export default function Home() {
               );
             })
           ) : (
-            <div className="col-span-full mt-10">
-               <Alert className="text-center">
+            <div className="col-span-full mt-10 animate-fade-in">
+               <Alert className="text-center glass-card">
                  <AlertDescription className="text-muted-foreground">
                     No movies found matching your criteria.
                  </AlertDescription>

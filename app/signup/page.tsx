@@ -120,18 +120,18 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-20 md:pb-4">
+      <Card className="glass-card w-full max-w-md animate-scale-in">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-xl md:text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center text-sm">
             Enter your information to create a new account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="glass-card animate-fade-in">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
@@ -140,14 +140,14 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="username"
                   type="text"
                   placeholder="johndoe"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 transition-smooth"
                   disabled={loading}
                 />
               </div>
@@ -156,7 +156,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
@@ -164,7 +164,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="pl-10"
+                  className="pl-10 transition-smooth"
                   disabled={loading}
                 />
               </div>
@@ -173,7 +173,7 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
@@ -182,7 +182,7 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="pl-10"
+                  className="pl-10 transition-smooth"
                   disabled={loading}
                 />
               </div>
@@ -191,7 +191,7 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading || authLoading}>
+            <Button type="submit" className="w-full transition-smooth" disabled={loading || authLoading}>
               {loading || authLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -203,9 +203,9 @@ export default function SignupPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-4 text-center text-xs md:text-sm">
             <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link href="/login" className="text-primary hover:underline font-medium transition-smooth">
               Sign in
             </Link>
           </div>

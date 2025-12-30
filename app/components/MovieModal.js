@@ -67,7 +67,7 @@ export default function MovieModal({ movie, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="bg-gray-900 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
+      <div className="bg-card w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl border border-border max-h-[90vh] overflow-y-auto glass-card">
         
         {/* Close Button */}
         <button onClick={onClose} className="absolute top-4 right-4 z-10 p-2 bg-black/50 rounded-full hover:bg-red-600 transition">
@@ -92,56 +92,56 @@ export default function MovieModal({ movie, onClose }) {
             {/* Right: Details */}
             <div className="w-full md:w-2/3 p-6 md:p-8 text-white">
               <h2 className="text-3xl font-bold mb-2">{movie.title}</h2>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-6">
-                <span className="border border-gray-600 px-2 py-1 rounded">{details?.release_date?.split('-')[0]}</span>
-                <span className="border border-gray-600 px-2 py-1 rounded">{details?.runtime} min</span>
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">
+                <span className="border border-border px-2 py-1 rounded">{details?.release_date?.split('-')[0]}</span>
+                <span className="border border-border px-2 py-1 rounded">{details?.runtime} min</span>
                 <span className="text-red-400 font-semibold">{details?.genres?.map(g => g.name).join(', ')}</span>
               </div>
 
               {/* Comparison Stats Grid */}
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {/* IMDb */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <div className="bg-muted p-4 rounded-xl border border-border glass-card">
                   <div className="flex items-center gap-2 text-yellow-400 mb-1">
                     <Star className="fill-current w-5 h-5" />
                     <span className="font-bold text-xl">{omdbData?.imdbRating || 'N/A'}</span>
                   </div>
-                  <p className="text-xs text-gray-400">IMDb Rating</p>
+                  <p className="text-xs text-muted-foreground">IMDb Rating</p>
                 </div>
 
                 {/* Rotten Tomatoes */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <div className="bg-muted p-4 rounded-xl border border-border glass-card">
                   <div className="flex items-center gap-2 text-red-500 mb-1">
                     <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Rotten_Tomatoes.svg" className="w-5 h-5" alt="RT" />
                     <span className="font-bold text-xl">{getRottenTomatoes()}</span>
                   </div>
-                  <p className="text-xs text-gray-400">Rotten Tomatoes</p>
+                  <p className="text-xs text-muted-foreground">Rotten Tomatoes</p>
                 </div>
 
                 {/* Budget/Box Office (From OMDb or TMDB) */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <div className="bg-muted p-4 rounded-xl border border-border glass-card">
                   <div className="flex items-center gap-2 text-green-400 mb-1">
                     <DollarSign className="w-5 h-5" />
                     <span className="font-bold text-lg">{omdbData?.BoxOffice !== 'N/A' ? omdbData?.BoxOffice : 'N/A'}</span>
                   </div>
-                  <p className="text-xs text-gray-400">Box Office (Intl)</p>
+                  <p className="text-xs text-muted-foreground">Box Office (Intl)</p>
                 </div>
 
                 {/* Awards */}
-                <div className="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <div className="bg-muted p-4 rounded-xl border border-border glass-card">
                   <div className="flex items-center gap-2 text-purple-400 mb-1">
                     <Trophy className="w-5 h-5" />
                     <span className="font-bold text-sm truncate w-full">{omdbData?.Awards !== 'N/A' ? 'Winner' : 'None'}</span>
                   </div>
-                  <p className="text-xs text-gray-400 truncate">{omdbData?.Awards}</p>
+                  <p className="text-xs text-muted-foreground truncate">{omdbData?.Awards}</p>
                 </div>
               </div>
 
               {/* Plot */}
-              <p className="text-gray-300 mb-6 leading-relaxed">{details?.overview}</p>
+              <p className="text-foreground mb-6 leading-relaxed">{details?.overview}</p>
 
               {/* Streaming Section */}
-              <div className="border-t border-gray-700 pt-6">
+              <div className="border-t border-border pt-6">
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                    <Tv className="w-5 h-5 text-blue-400" /> Where to Watch
                 </h3>
@@ -155,7 +155,7 @@ export default function MovieModal({ movie, onClose }) {
                     Watch on {getStreaming()}
                   </a>
                 ) : (
-                  <p className="text-gray-500">Streaming information not available for this region.</p>
+                  <p className="text-muted-foreground">Streaming information not available for this region.</p>
                 )}
               </div>
 
