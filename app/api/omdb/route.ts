@@ -7,13 +7,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const imdbId = searchParams.get('imdbId');
   const plot = searchParams.get('plot') || 'short';
-  const API_KEY = process.env.NEXT_PUBLIC_OMDB_API_KEY;
+  const API_KEY = process.env.NEXT_PUBLIC_OMDB_API_KEY?.trim();
 
   if (!API_KEY) {
     return NextResponse.json(
-      { error: 'OMDB API key is not configured' },
+      { error: 'OMDB API key is not configured. Please set NEXT_PUBLIC_OMDB_API_KEY in your .env.local file' },
       { status: 500 }
     );
+  }
+
+  // Basic validation - OMDb API keys are typically at least 8 characters
+  if (API_KEY.length < 8) {
+    console.warn('OMDb API key appears to be too short. Please verify it is complete.');
   }
 
   if (!imdbId) {
@@ -32,18 +37,53 @@ export async function GET(request: Request) {
       },
     });
 
+    // Check if OMDb returned an error response
     if (response.data.Response === 'False') {
+      const omdbError = response.data.Error || 'Movie not found in OMDB';
+      
+      // Handle specific OMDb error messages
+      if (omdbError.includes('Invalid API key') || omdbError.includes('401')) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid OMDb API key. Please check your NEXT_PUBLIC_OMDB_API_KEY in .env.local',
+            details: omdbError
+          },
+          { status: 401 }
+        );
+      }
+      
       return NextResponse.json(
-        { error: response.data.Error || 'Movie not found in OMDB' },
+        { error: omdbError },
         { status: 404 }
       );
     }
 
     return NextResponse.json(response.data);
   } catch (error: any) {
-    console.error('Error fetching movie details from OMDB:', error);
+    // Log detailed error information for debugging
+    console.error('Error fetching movie details from OMDB:');
+    console.error('Status:', error.response?.status);
+    console.error('Error data:', error.response?.data);
+    console.error('Error message:', error.message);
+    console.error('API Key length:', API_KEY?.length);
+    console.error('API Key first 4 chars:', API_KEY?.substring(0, 4));
     
-    const errorMessage = error.response?.data?.Error || error.message || 'Failed to fetch movie details';
+    // Handle 401 Unauthorized specifically
+    if (error.response?.status === 401) {
+      const omdbErrorMsg = error.response?.data?.Error || error.response?.data?.error || 'Unauthorized access to OMDb API';
+      console.error('OMDb API Error:', omdbErrorMsg);
+      
+      return NextResponse.json(
+        { 
+          error: 'OMDb API key is invalid or expired. Please check your NEXT_PUBLIC_OMDB_API_KEY in .env.local',
+          details: omdbErrorMsg,
+          hint: 'Get a free API key at https://www.omdbapi.com/apikey.aspx'
+        },
+        { status: 401 }
+      );
+    }
+    
+    const errorMessage = error.response?.data?.Error || error.response?.data?.error || error.message || 'Failed to fetch movie details';
     const statusCode = error.response?.status || 500;
 
     return NextResponse.json(

@@ -79,7 +79,7 @@ FIREBASE_PRIVATE_KEY=your_private_key
 NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_api_key
 
 # OMDb API
-OMDB_API_KEY=your_omdb_api_key
+NEXT_PUBLIC_OMDB_API_KEY=your_omdb_api_key
 ```
 
 4. Run the development server:

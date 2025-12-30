@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import WatchlistButton from '../../components/WatchlistButton';
 import MarkWatchedButton from '../../components/MarkWatchedButton';
 import RatingButton from '../../components/RatingButton';
+import ReviewsSection from '../../components/ReviewsSection';
 import { fetchImdbAwards } from '@/lib/movie-utils';
 
 // Shadcn UI Imports
@@ -392,6 +393,13 @@ export default function MovieDetail() {
                         </Alert>
                     )}
                 </div>
+
+                {/* Reviews Section */}
+                {movie && (
+                    <div className="md:col-span-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
+                        <ReviewsSection movieId={movie.id} movieTitle={movie.title} />
+                    </div>
+                )}
 
                 {/* Right Column: Detailed Info */}
                 <div className="md:col-span-2 space-y-6 md:space-y-10 pt-6 md:pt-10 lg:pt-20 animate-fade-in">

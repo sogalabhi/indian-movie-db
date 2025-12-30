@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { getAvatarColor, getInitials } from '@/lib/avatar-utils';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -76,12 +77,9 @@ export default function ProfilePage() {
     return null; // Will redirect
   }
 
-  const initials = user.displayName
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || user.email?.[0].toUpperCase() || 'U';
+  const displayName = user.displayName || user.email?.split('@')[0] || 'User';
+  const initials = getInitials(displayName);
+  const avatarColor = getAvatarColor(displayName);
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
@@ -105,7 +103,10 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               <Avatar className="h-20 w-20 md:h-24 md:w-24">
                 <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-                <AvatarFallback className="text-2xl md:text-3xl bg-primary text-primary-foreground">
+                <AvatarFallback 
+                  className="text-2xl md:text-3xl font-semibold text-white"
+                  style={{ backgroundColor: avatarColor }}
+                >
                   {initials}
                 </AvatarFallback>
               </Avatar>
