@@ -6,7 +6,7 @@ A comprehensive movie database and social platform for Indian cinema enthusiasts
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| ✅ **Personal Profile** | ⬜ | A dedicated profile page displaying your avatar, username, and activity |
+| ✅ **Personal Profile** | ✅ | A dedicated profile page displaying your avatar, username, and activity |
 | ✅ **Watchlist** | ✅ | A simple "Bookmark" button to save movies you want to watch later |
 | ✅ **Watched History & Ratings** | ⬜ | A personal log of every movie you have seen, along with your 1-10 rating |
 | ✅ **Movie Discussions** | ⬜ | A comment section on every movie page to reply to others and start threads |
