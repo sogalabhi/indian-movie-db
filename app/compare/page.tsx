@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useComparison } from '../contexts/ComparisonContext';
-import { ArrowLeft, X, Star, Calendar, Clock, DollarSign, Film } from 'lucide-react';
+import { ArrowLeft, X, Star, Calendar, Clock, DollarSign, Film, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { fetchMultipleImdbAwards } from '@/lib/movie-utils';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,8 @@ export default function ComparePage() {
   const [fullMovieDetails, setFullMovieDetails] = useState<Record<number, any>>({});
   const [omdbData, setOmdbData] = useState<Record<number, any>>({});
   const [loadingOmdb, setLoadingOmdb] = useState<Record<number, boolean>>({});
+  const [awardsData, setAwardsData] = useState<Record<number, any[]>>({});
+  const [loadingAwards, setLoadingAwards] = useState<Record<number, boolean>>({});
 
   // --- Data Fetching Logic (Kept Same) ---
   useEffect(() => {
@@ -114,6 +117,48 @@ export default function ComparePage() {
     fetchOmdbData();
   }, [movies, fullMovieDetails, omdbData]);
 
+  // Fetch Awards Data
+  useEffect(() => {
+    const fetchAwards = async () => {
+      const moviesToFetch = movies.filter((movie) => {
+        const omdb = omdbData[movie.id];
+        return omdb?.imdbID && !awardsData[movie.id] && !loadingAwards[movie.id];
+      });
+
+      if (moviesToFetch.length === 0) return;
+
+      setLoadingAwards((prev) => {
+        const newState = { ...prev };
+        moviesToFetch.forEach((m) => { newState[m.id] = true; });
+        return newState;
+      });
+
+      try {
+        const moviesWithImdbId = moviesToFetch
+          .map((movie) => {
+            const omdb = omdbData[movie.id];
+            return omdb?.imdbID ? { movieId: movie.id, imdbId: omdb.imdbID } : null;
+          })
+          .filter((item): item is { movieId: number; imdbId: string } => item !== null);
+
+        if (moviesWithImdbId.length > 0) {
+          const awardsMap = await fetchMultipleImdbAwards(moviesWithImdbId);
+          setAwardsData((prev) => ({ ...prev, ...awardsMap }));
+        }
+      } catch (error) {
+        console.error('Error fetching awards:', error);
+      } finally {
+        setLoadingAwards((prev) => {
+          const newState = { ...prev };
+          moviesToFetch.forEach((m) => { newState[m.id] = false; });
+          return newState;
+        });
+      }
+    };
+
+    fetchAwards();
+  }, [movies, omdbData, awardsData, loadingAwards]);
+
   // --- Helpers ---
   const getMovieData = (movie: any) => {
     const fullDetails = fullMovieDetails[movie.id];
@@ -137,11 +182,6 @@ export default function ComparePage() {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  const truncateText = (text: string, maxLength: number = 150) => {
-    if (!text) return 'N/A';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   if (movies.length === 0) {
@@ -377,11 +417,73 @@ export default function ComparePage() {
                 <TableRow>
                   <TableCell className="font-medium bg-muted/50">Overview</TableCell>
                   {movies.map((movie) => (
-                    <TableCell key={movie.id} className="text-center text-xs text-muted-foreground p-2">
-                        <p className="line-clamp-4">{getMovieData(movie).overview}</p>
+                    <TableCell key={movie.id} className="text-xs text-muted-foreground p-2">
+                        <p className="whitespace-normal">{getMovieData(movie).overview || 'N/A'}</p>
                     </TableCell>
                   ))}
                    {Array.from({ length: 4 - movies.length }).map((_, i) => <TableCell key={i} className="text-center bg-muted/20">-</TableCell>)}
+                </TableRow>
+
+                {/* Awards */}
+                <TableRow>
+                  <TableCell className="font-medium bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-4 h-4 text-primary" /> Awards
+                    </div>
+                  </TableCell>
+                  {movies.map((movie) => {
+                    const omdb = omdbData[movie.id];
+                    const awards = awardsData[movie.id] || [];
+                    const isLoading = loadingAwards[movie.id];
+                    const hasAwards = awards.length > 0;
+                    
+                    return (
+                      <TableCell key={movie.id} className="p-2">
+                        {isLoading ? (
+                          <span className="text-xs text-muted-foreground">Loading...</span>
+                        ) : hasAwards ? (
+                          <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {awards.slice(0, 5).map((award: any, index: number) => {
+                              if (award.award) {
+                                const isWin = award.status?.toLowerCase().includes('win') || award.status?.toLowerCase().includes('won');
+                                return (
+                                  <div key={index} className="text-xs border rounded p-2 bg-muted/30">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold truncate" title={award.award}>{award.award}</p>
+                                        {award.category && (
+                                          <p className="text-muted-foreground truncate" title={award.category}>{award.category}</p>
+                                        )}
+                                        {award.recipient && (
+                                          <p className="text-muted-foreground/70 truncate text-[10px]">{award.recipient}</p>
+                                        )}
+                                      </div>
+                                      <Badge variant={isWin ? "default" : "secondary"} className="text-[10px] px-1 py-0 h-4 flex-shrink-0">
+                                        {award.status || 'Winner'}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={index} className="text-xs text-muted-foreground p-2 border rounded">
+                                  {award.raw || award}
+                                </div>
+                              );
+                            })}
+                            {awards.length > 5 && (
+                              <p className="text-xs text-muted-foreground italic">+{awards.length - 5} more awards</p>
+                            )}
+                          </div>
+                        ) : omdb?.Awards && omdb.Awards !== 'N/A' ? (
+                          <p className="text-xs text-muted-foreground">{omdb.Awards}</p>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">N/A</span>
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                  {Array.from({ length: 4 - movies.length }).map((_, i) => <TableCell key={i} className="text-center bg-muted/20">-</TableCell>)}
                 </TableRow>
               </TableBody>
             </Table>
@@ -436,7 +538,11 @@ export default function ComparePage() {
                    </div>
                 </div>
                 <CardContent className="p-4 space-y-3 text-sm">
-                  {/* ... Mobile content kept same ... */}
+                  <div>
+                    <span className="text-muted-foreground block mb-1">Overview</span>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{data.overview || 'N/A'}</p>
+                  </div>
+                  <Separator />
                   <div className="grid grid-cols-2 gap-2">
                     <div className="text-muted-foreground">Release Date</div>
                     <div className="text-right">{movie.release_date ? new Date(movie.release_date).toLocaleDateString() : 'N/A'}</div>
@@ -454,6 +560,40 @@ export default function ComparePage() {
                       ))}
                     </div>
                   </div>
+                  {(awardsData[movie.id]?.length > 0 || omdbData[movie.id]?.Awards) && (
+                    <>
+                      <Separator />
+                      <div>
+                        <span className="text-muted-foreground block mb-1 flex items-center gap-1">
+                          <Trophy className="w-3 h-3 text-primary" /> Awards
+                        </span>
+                        {awardsData[movie.id]?.length > 0 ? (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            {awardsData[movie.id].slice(0, 3).map((award: any, index: number) => {
+                              if (award.award) {
+                                return (
+                                  <div key={index} className="text-xs border rounded p-1.5 bg-muted/30">
+                                    <p className="font-semibold truncate">{award.award}</p>
+                                    {award.category && <p className="text-muted-foreground text-[10px] truncate">{award.category}</p>}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })}
+                            {awardsData[movie.id].length > 3 && (
+                              <p className="text-xs text-muted-foreground italic">+{awardsData[movie.id].length - 3} more</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            {omdbData[movie.id]?.Awards && omdbData[movie.id].Awards !== 'N/A' 
+                              ? omdbData[movie.id].Awards 
+                              : 'N/A'}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             );

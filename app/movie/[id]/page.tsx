@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check, AlertCircle } from 'lucide-react';
 import { useComparison } from '../../contexts/ComparisonContext';
 import WatchlistButton from '../../components/WatchlistButton';
+import { fetchImdbAwards } from '@/lib/movie-utils';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -30,9 +31,9 @@ export default function MovieDetail() {
 
     useEffect(() => {
         if (omdb?.imdbID) {
-            axios.get(`/api/awards?imdbId=${omdb.imdbID}`)
-                .then(res => setDetailedAwards(res.data.awards))
-                .catch(err => console.error(err));
+            fetchImdbAwards(omdb.imdbID)
+                .then((awards: any[]) => setDetailedAwards(awards as []))
+                .catch(err => console.error('Error fetching awards:', err));
         }
     }, [omdb]);
 
