@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, BookmarkCheck, Scale, User } from 'lucide-react';
+import { Home, Newspaper, BookmarkCheck, Scale, User, Eye } from 'lucide-react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/watchlist', label: 'Watchlist', icon: BookmarkCheck, requiresAuth: true },
+  { href: '/watched', label: 'Watched', icon: Eye, requiresAuth: true },
   { href: '/compare', label: 'Compare', icon: Scale },
   { href: '/profile', label: 'Profile', icon: User, requiresAuth: true },
 ];

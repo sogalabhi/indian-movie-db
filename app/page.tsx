@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User, BookmarkCheck } from 'lucide-react';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User, BookmarkCheck, Award, Eye } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
 import { useAuth } from './contexts/AuthContext';
 import WatchlistButton from './components/WatchlistButton';
+import RatingButton from './components/RatingButton';
 import { ThemeToggle } from './components/ThemeToggle';
 
 // Shadcn UI Imports
@@ -18,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { getCache, setCache } from '@/lib/cache';
 
 export default function Home() {
   const router = useRouter();
@@ -53,6 +55,17 @@ export default function Home() {
 
   const [genreMovies, setGenreMovies] = useState<Record<number, { movies: Movie[]; loading: boolean; error: string | null }>>({});
 
+  // High-rated movies sections
+  const [highRatedMovies, setHighRatedMovies] = useState<{
+    imdb8: { movies: Movie[]; loading: boolean; error: string | null };
+    rt80: { movies: Movie[]; loading: boolean; error: string | null };
+  }>({
+    imdb8: { movies: [], loading: false, error: null },
+    rt80: { movies: [], loading: false, error: null },
+  });
+
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
+
   // Debounce Logic
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -65,15 +78,48 @@ export default function Home() {
   // Fetch Movies
   useEffect(() => {
     const fetchMovies = async () => {
+      // Don't cache search results
+      if (debouncedQuery) {
+        setLoading(true);
+        setError(null);
+        try {
+          const params = new URLSearchParams();
+          params.append('query', debouncedQuery);
+
+          const response = await fetch(`/api/movies?${params.toString()}`);
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch movies');
+          }
+
+          const data = await response.json();
+          setMovies(data.results || []);
+        } catch (error: any) {
+          console.error("Error fetching data", error);
+          setError(error.message || 'Failed to load movies. Please try again.');
+          setMovies([]);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Check cache first for non-search queries
+      const cacheKey = `movies_${language}`;
+      const cached = getCache<Movie[]>(cacheKey);
+      
+      if (cached) {
+        setMovies(cached);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
         const params = new URLSearchParams();
-        if (debouncedQuery) {
-          params.append('query', debouncedQuery);
-        } else {
-          params.append('language', language);
-        }
+        params.append('language', language);
 
         const response = await fetch(`/api/movies?${params.toString()}`);
         
@@ -83,7 +129,11 @@ export default function Home() {
         }
 
         const data = await response.json();
-        setMovies(data.results || []);
+        const results = data.results || [];
+        setMovies(results);
+        
+        // Cache for 5 minutes
+        setCache(cacheKey, results, 5 * 60 * 1000);
       } catch (error: any) {
         console.error("Error fetching data", error);
         setError(error.message || 'Failed to load movies. Please try again.');
@@ -105,6 +155,15 @@ export default function Home() {
     }
 
     const fetchGenreMovies = async () => {
+      // Check cache first
+      const cacheKey = `genre_movies_${language}`;
+      const cached = getCache<Record<number, { movies: Movie[]; loading: boolean; error: string | null }>>(cacheKey);
+      
+      if (cached) {
+        setGenreMovies(cached);
+        return;
+      }
+
       // Initialize loading states
       const initialGenreMovies: Record<number, { movies: Movie[]; loading: boolean; error: string | null }> = {};
       genres.forEach((genre) => {
@@ -150,10 +209,126 @@ export default function Home() {
       });
 
       setGenreMovies(updatedGenreMovies);
+      
+      // Cache for 5 minutes
+      setCache(cacheKey, updatedGenreMovies, 5 * 60 * 1000);
     };
 
     fetchGenreMovies();
   }, [language, debouncedQuery]);
+
+  // Fetch High-Rated Movies (only when not searching)
+  useEffect(() => {
+    if (debouncedQuery) {
+      // Clear high-rated movies when searching
+      setHighRatedMovies({
+        imdb8: { movies: [], loading: false, error: null },
+        rt80: { movies: [], loading: false, error: null },
+      });
+      return;
+    }
+
+    const fetchHighRatedMovies = async () => {
+      // Check cache first
+      const cacheKey = `high_rated_${language}_${showAllLanguages}`;
+      const cached = getCache<{
+        imdb8: { movies: Movie[]; loading: boolean; error: string | null };
+        rt80: { movies: Movie[]; loading: boolean; error: string | null };
+      }>(cacheKey);
+      
+      if (cached) {
+        setHighRatedMovies(cached);
+        return;
+      }
+
+      // Set loading states
+      setHighRatedMovies({
+        imdb8: { movies: [], loading: true, error: null },
+        rt80: { movies: [], loading: true, error: null },
+      });
+
+      // Fetch both types in parallel
+      const [imdb8Result, rt80Result] = await Promise.allSettled([
+        fetch(`/api/movies/high-rated?type=imdb8&language=${language}&allLanguages=${showAllLanguages}&limit=10`),
+        fetch(`/api/movies/high-rated?type=rt80&language=${language}&allLanguages=${showAllLanguages}&limit=10`),
+      ]);
+
+      // Process IMDb 8+ results
+      let imdb8Movies: Movie[] = [];
+      let imdb8Error: string | null = null;
+      
+      if (imdb8Result.status === 'fulfilled') {
+        try {
+          const response = await imdb8Result.value.json();
+          if (imdb8Result.value.ok) {
+            imdb8Movies = response.results || [];
+            setHighRatedMovies((prev) => ({
+              ...prev,
+              imdb8: { movies: imdb8Movies, loading: false, error: null },
+            }));
+          } else {
+            throw new Error(response.error || 'Failed to fetch IMDb 8+ movies');
+          }
+        } catch (error: any) {
+          console.error('Error fetching IMDb 8+ movies:', error);
+          imdb8Error = error.message || 'Failed to load movies';
+          setHighRatedMovies((prev) => ({
+            ...prev,
+            imdb8: { movies: [], loading: false, error: imdb8Error },
+          }));
+        }
+      } else {
+        imdb8Error = 'Failed to fetch IMDb 8+ movies';
+        setHighRatedMovies((prev) => ({
+          ...prev,
+          imdb8: { movies: [], loading: false, error: imdb8Error },
+        }));
+      }
+
+      // Process RT 80%+ results
+      let rt80Movies: Movie[] = [];
+      let rt80Error: string | null = null;
+      
+      if (rt80Result.status === 'fulfilled') {
+        try {
+          const response = await rt80Result.value.json();
+          if (rt80Result.value.ok) {
+            rt80Movies = response.results || [];
+            setHighRatedMovies((prev) => ({
+              ...prev,
+              rt80: { movies: rt80Movies, loading: false, error: null },
+            }));
+          } else {
+            throw new Error(response.error || 'Failed to fetch RT 80%+ movies');
+          }
+        } catch (error: any) {
+          console.error('Error fetching RT 80%+ movies:', error);
+          rt80Error = error.message || 'Failed to load movies';
+          setHighRatedMovies((prev) => ({
+            ...prev,
+            rt80: { movies: [], loading: false, error: rt80Error },
+          }));
+        }
+      } else {
+        rt80Error = 'Failed to fetch RT 80%+ movies';
+        setHighRatedMovies((prev) => ({
+          ...prev,
+          rt80: { movies: [], loading: false, error: rt80Error },
+        }));
+      }
+
+      // Cache results if successful (only cache if no errors)
+      if (!imdb8Error && !rt80Error) {
+        const cacheData = {
+          imdb8: { movies: imdb8Movies, loading: false, error: null },
+          rt80: { movies: rt80Movies, loading: false, error: null },
+        };
+        setCache(cacheKey, cacheData, 5 * 60 * 1000); // Cache for 5 minutes
+      }
+    };
+
+    fetchHighRatedMovies();
+  }, [language, debouncedQuery, showAllLanguages]);
 
   const handleAddToCompare = async (e: React.MouseEvent, movie: Movie) => {
     e.preventDefault();
@@ -221,12 +396,20 @@ export default function Home() {
               </Button>
               
               {user && (
-                <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
-                  <Link href="/watchlist" className="flex items-center gap-2">
-                    <BookmarkCheck className="w-5 h-5" />
-                    <span className="font-semibold">Watchlist</span>
-                  </Link>
-                </Button>
+                <>
+                  <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
+                    <Link href="/watchlist" className="flex items-center gap-2">
+                      <BookmarkCheck className="w-5 h-5" />
+                      <span className="font-semibold">Watchlist</span>
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
+                    <Link href="/watched" className="flex items-center gap-2">
+                      <Eye className="w-5 h-5" />
+                      <span className="font-semibold">Watched</span>
+                    </Link>
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -389,22 +572,32 @@ export default function Home() {
                               </CardContent>
                             </Card>
                           </Link>
-                          <Button
-                            size="icon"
-                            onClick={(e) => handleAddToCompare(e, movie)}
-                            disabled={disabled || inComparison || isAdding}
-                            variant={inComparison ? "default" : "secondary"}
-                            className="absolute top-2 right-2 z-10 rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
-                            title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
-                          >
-                            {isAdding ? (
-                              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                            ) : inComparison ? (
-                              <Check className="w-4 h-4" />
-                            ) : (
-                              <Scale className="w-4 h-4" />
-                            )}
-                          </Button>
+                          <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
+                            <RatingButton
+                              movieId={movie.id}
+                              movieTitle={movie.title}
+                              variant="secondary"
+                              size="icon"
+                              showBadge={false}
+                              className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
+                            />
+                            <Button
+                              size="icon"
+                              onClick={(e) => handleAddToCompare(e, movie)}
+                              disabled={disabled || inComparison || isAdding}
+                              variant={inComparison ? "default" : "secondary"}
+                              className="rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
+                              title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                            >
+                              {isAdding ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : inComparison ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <Scale className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
@@ -419,6 +612,283 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* High-Rated Sections - Only show when not searching */}
+      {!debouncedQuery && (
+        <div className="space-y-8 mb-12">
+          {/* Language Filter Toggle for High-Rated Sections */}
+          <div className="flex items-center justify-between animate-fade-in">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Highly Rated Movies</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden md:inline">Filter:</span>
+              <Button
+                variant={showAllLanguages ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowAllLanguages(!showAllLanguages)}
+                className="transition-smooth"
+              >
+                {showAllLanguages ? 'All Languages' : language.toUpperCase()}
+              </Button>
+            </div>
+          </div>
+
+          {/* IMDb 8+ Section */}
+          <div className="space-y-3 md:space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-500 fill-current" />
+                IMDb 8+ Movies
+              </h3>
+              {highRatedMovies.imdb8.movies.length > 0 && (
+                <Button variant="ghost" size="sm" asChild className="transition-smooth">
+                  <Link href="/imdb-8-plus" className="flex items-center gap-1">
+                    View All <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+
+            {highRatedMovies.imdb8.loading ? (
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden glass-card animate-pulse">
+                    <div className="h-[210px] md:h-[270px]">
+                      <Skeleton className="w-full h-full" />
+                    </div>
+                    <CardContent className="p-3">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : highRatedMovies.imdb8.error ? (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">{highRatedMovies.imdb8.error}</AlertDescription>
+              </Alert>
+            ) : highRatedMovies.imdb8.movies.length > 0 ? (
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+                scrollSnapType: 'x mandatory'
+              } as React.CSSProperties}>
+                {highRatedMovies.imdb8.movies.map((movie, index) => {
+                  const inComparison = isInComparison(movie.id);
+                  const isAdding = addingMovieId === movie.id;
+                  const disabled = !canAddMore && !inComparison;
+
+                  return (
+                    <div 
+                      key={movie.id} 
+                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
+                      style={{ 
+                        scrollSnapAlign: 'start',
+                        animationDelay: `${index * 50}ms`
+                      }}
+                    >
+                      <Link href={`/movie/${movie.id}`} className="block h-full">
+                        <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
+                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                            <img
+                              src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                              alt={movie.title}
+                              className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                              style={{ objectFit: 'cover', objectPosition: 'center' }}
+                            />
+                            {/* IMDb Rating Badge */}
+                            {(movie as any).imdbRating && (
+                              <Badge className="absolute top-2 left-2 glass-card text-xs px-2 py-1 bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
+                                <Star className="w-3 h-3 fill-current mr-1" />
+                                {(movie as any).imdbRating.toFixed(1)}
+                              </Badge>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
+                                View Details
+                              </Badge>
+                            </div>
+                          </div>
+                          <CardContent className="p-3 flex-grow flex flex-col justify-end">
+                            <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                {movie.vote_average?.toFixed(1)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {movie.release_date?.split('-')[0]}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                      <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
+                        <RatingButton
+                          movieId={movie.id}
+                          movieTitle={movie.title}
+                          variant="secondary"
+                          size="icon"
+                          showBadge={false}
+                          className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={(e) => handleAddToCompare(e, movie)}
+                          disabled={disabled || inComparison || isAdding}
+                          variant={inComparison ? "default" : "secondary"}
+                          className="rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
+                          title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                        >
+                          {isAdding ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : inComparison ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Scale className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert>
+                <AlertDescription className="text-sm text-muted-foreground">
+                  No IMDb 8+ movies found.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
+          {/* Rotten Tomatoes 80%+ Section */}
+          <div className="space-y-3 md:space-y-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+                <Award className="w-5 h-5 text-red-500" />
+                Rotten Tomatoes 80%+ Movies
+              </h3>
+              {highRatedMovies.rt80.movies.length > 0 && (
+                <Button variant="ghost" size="sm" asChild className="transition-smooth">
+                  <Link href="/rt-80-plus" className="flex items-center gap-1">
+                    View All <ChevronRight className="w-4 h-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+
+            {highRatedMovies.rt80.loading ? (
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden glass-card animate-pulse">
+                    <div className="h-[210px] md:h-[270px]">
+                      <Skeleton className="w-full h-full" />
+                    </div>
+                    <CardContent className="p-3">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-3 w-2/3" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : highRatedMovies.rt80.error ? (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">{highRatedMovies.rt80.error}</AlertDescription>
+              </Alert>
+            ) : highRatedMovies.rt80.movies.length > 0 ? (
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+                scrollSnapType: 'x mandatory'
+              } as React.CSSProperties}>
+                {highRatedMovies.rt80.movies.map((movie, index) => {
+                  const inComparison = isInComparison(movie.id);
+                  const isAdding = addingMovieId === movie.id;
+                  const disabled = !canAddMore && !inComparison;
+
+                  return (
+                    <div 
+                      key={movie.id} 
+                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
+                      style={{ 
+                        scrollSnapAlign: 'start',
+                        animationDelay: `${index * 50}ms`
+                      }}
+                    >
+                      <Link href={`/movie/${movie.id}`} className="block h-full">
+                        <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
+                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                            <img
+                              src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                              alt={movie.title}
+                              className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                              style={{ objectFit: 'cover', objectPosition: 'center' }}
+                            />
+                            {/* RT Rating Badge */}
+                            {(movie as any).rtRating && (
+                              <Badge className="absolute top-2 left-2 glass-card text-xs px-2 py-1 bg-red-500/20 text-red-500 border-red-500/30">
+                                <Award className="w-3 h-3 mr-1" />
+                                {(movie as any).rtRating}%
+                              </Badge>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
+                                View Details
+                              </Badge>
+                            </div>
+                          </div>
+                          <CardContent className="p-3 flex-grow flex flex-col justify-end">
+                            <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                {movie.vote_average?.toFixed(1)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {movie.release_date?.split('-')[0]}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                      <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
+                        <RatingButton
+                          movieId={movie.id}
+                          movieTitle={movie.title}
+                          variant="secondary"
+                          size="icon"
+                          showBadge={false}
+                          className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
+                        />
+                        <Button
+                          size="icon"
+                          onClick={(e) => handleAddToCompare(e, movie)}
+                          disabled={disabled || inComparison || isAdding}
+                          variant={inComparison ? "default" : "secondary"}
+                          className="rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
+                          title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                        >
+                          {isAdding ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : inComparison ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Scale className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Alert>
+                <AlertDescription className="text-sm text-muted-foreground">
+                  No Rotten Tomatoes 80%+ movies found.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
       )}
 
@@ -498,6 +968,14 @@ export default function Home() {
                       movieId={movie.id}
                       variant="secondary"
                       size="icon"
+                      className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
+                    />
+                    <RatingButton
+                      movieId={movie.id}
+                      movieTitle={movie.title}
+                      variant="secondary"
+                      size="icon"
+                      showBadge={false}
                       className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                     />
                     <Button

@@ -5,7 +5,10 @@ import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
 import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check, AlertCircle } from 'lucide-react';
 import { useComparison } from '../../contexts/ComparisonContext';
+import { useAuth } from '../../contexts/AuthContext';
 import WatchlistButton from '../../components/WatchlistButton';
+import MarkWatchedButton from '../../components/MarkWatchedButton';
+import RatingButton from '../../components/RatingButton';
 import { fetchImdbAwards } from '@/lib/movie-utils';
 
 // Shadcn UI Imports
@@ -21,6 +24,7 @@ export default function MovieDetail() {
     const { id } = useParams();
     const router = useRouter();
     const { addToCompare, isInComparison, canAddMore } = useComparison();
+    const { user } = useAuth();
 
     const [movie, setMovie] = useState<any>(null);
     const [omdb, setOmdb] = useState<any>(null);
@@ -28,6 +32,7 @@ export default function MovieDetail() {
     const [error, setError] = useState<string | null>(null);
     const [detailedAwards, setDetailedAwards] = useState([]);
     const [isAddingToCompare, setIsAddingToCompare] = useState(false);
+    const [userRating, setUserRating] = useState<{ rating: number; body?: string } | null>(null);
 
     useEffect(() => {
         if (omdb?.imdbID) {
@@ -94,6 +99,35 @@ export default function MovieDetail() {
 
         fetchData();
     }, [id]);
+
+    // Fetch user's rating for this movie
+    const fetchUserRating = async () => {
+        if (!user || !id) {
+            setUserRating(null);
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/reviews/${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.review) {
+                    setUserRating({
+                        rating: data.review.rating,
+                        body: data.review.body,
+                    });
+                } else {
+                    setUserRating(null);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user rating:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUserRating();
+    }, [user, id]);
 
     // Loading State with Skeletons
     if (loading) return (
@@ -282,6 +316,57 @@ export default function MovieDetail() {
                                 className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card"
                             />
                         </div>
+                    )}
+
+                    {/* Mark as Watched Button */}
+                    {movie && (
+                        <div style={{ animationDelay: '350ms' }} className="animate-scale-in">
+                            <MarkWatchedButton
+                                movieId={movie.id}
+                                movieTitle={movie.title}
+                                variant="outline"
+                                className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card"
+                                onSave={fetchUserRating}
+                            />
+                        </div>
+                    )}
+
+                    {/* User Rating Display */}
+                    {user && userRating && (
+                        <Card className="glass-card animate-scale-in" style={{ animationDelay: '400ms' }}>
+                            <CardContent className="p-4 md:p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-sm md:text-base font-semibold">Your Rating</h3>
+                                    <RatingButton
+                                        movieId={movie.id}
+                                        movieTitle={movie.title}
+                                        size="sm"
+                                        variant="ghost"
+                                        onSave={fetchUserRating}
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                                            <Star
+                                                key={value}
+                                                className={`h-4 w-4 md:h-5 md:w-5 ${
+                                                    value <= userRating.rating
+                                                        ? 'text-yellow-500 fill-current'
+                                                        : 'text-muted-foreground'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className="text-lg md:text-xl font-bold">{userRating.rating}/10</span>
+                                </div>
+                                {userRating.body && (
+                                    <p className="text-sm md:text-base text-muted-foreground mt-2 line-clamp-3">
+                                        {userRating.body}
+                                    </p>
+                                )}
+                            </CardContent>
+                        </Card>
                     )}
 
                     {/* Streaming Button */}

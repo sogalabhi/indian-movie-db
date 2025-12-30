@@ -8,7 +8,7 @@ A comprehensive movie database and social platform for Indian cinema enthusiasts
 |---------|--------|-------------|
 | ✅ **Personal Profile** | ✅ | A dedicated profile page displaying your avatar, username, and activity |
 | ✅ **Watchlist** | ✅ | A simple "Bookmark" button to save movies you want to watch later |
-| ✅ **Watched History & Ratings** | ⬜ | A personal log of every movie you have seen, along with your 1-10 rating |
+| ✅ **Watched History & Ratings** | ✅ | A personal log of every movie you have seen, along with your 1-10 rating. See [documentation](./docs/watched-history.md) for details |
 | ✅ **Movie Discussions** | ⬜ | A comment section on every movie page to reply to others and start threads |
 | ✅ **Cinema News Feed** | ✅ | A "News" tab that shows the latest industry updates (comments feature pending) |
 | ✅ **User Reviews** | ⬜ | A place to write and publish detailed reviews for the community to read |
@@ -17,7 +17,7 @@ A comprehensive movie database and social platform for Indian cinema enthusiasts
 | ✅ **Likes & Engagement** | ⬜ | The ability to "Like" comments, reviews, and articles to show what you enjoy |
 | ✅ **Movie Comparator** | ✅ | A tool to compare movies side-by-side, showing ratings, awards, and a custom "Match Score" based on your unique tastes |
 | ✅ **IMDB and Rotten Tomatoes Ratings** | ✅ | Add IMDB and Rotten Tomatoes ratings in comparator |
-| ✅ **IMDB 8+ and RT 80%+ Sections** | ⬜ | Make a separate section of IMDB 8+ and Rotten Tomatoes 80%+ |
+| ✅ **IMDB 8+ and RT 80%+ Sections** | ✅ | Separate sections for IMDB 8+ and Rotten Tomatoes 80%+ movies with dedicated pages |
 | ✅ **Genre Based Sections** | ✅ | Genre based sections in the home page to scroll and check |
 
 ## Tech Stack
@@ -143,6 +143,15 @@ indian-movie-db/
 - Ratings shown in comparator tool
 - OMDb API integration for rating data
 
+### ✅ Watched History & Ratings
+- Mark movies as watched with required 1-10 rating
+- Optional review text for each movie
+- Complete watched history page with filtering and sorting
+- Statistics dashboard (total watched, average rating, distribution)
+- Rate movies from detail pages, cards, or history page
+- Integration with watchlist (prompt to remove when marking as watched)
+- See [Watched History Documentation](./docs/watched-history.md) for complete details
+
 ## Development
 
 ### Build for Production
@@ -171,6 +180,20 @@ The easiest way to deploy is using [Vercel](https://vercel.com):
 2. Import your repository in Vercel
 3. Add environment variables
 4. Deploy
+
+## Known Issues & Future Improvements
+
+### Caching
+Currently using basic client-side localStorage caching with a 5-minute TTL. This provides a simple solution but has limitations:
+- Cache is lost when localStorage is cleared
+- No cross-device synchronization
+- Limited cache invalidation strategies
+
+**TODO: Improve caching implementation**
+- Consider implementing React Query or SWR for better cache management
+- Add Next.js server-side caching with revalidation
+- Implement Redis for persistent cross-session caching
+- Add background jobs to pre-fetch popular data
 
 ## Contributing
 
