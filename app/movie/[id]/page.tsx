@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
-import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check, AlertCircle } from 'lucide-react';
+import { Star, Trophy, ArrowLeft, Tv, Users, Clapperboard, Scale, Check, AlertCircle, Music, Play, Pause } from 'lucide-react';
 import { useComparison } from '../../contexts/ComparisonContext';
 import { useAuth } from '../../contexts/AuthContext';
 import WatchlistButton from '../../components/WatchlistButton';
@@ -34,6 +34,10 @@ export default function MovieDetail() {
     const [detailedAwards, setDetailedAwards] = useState([]);
     const [isAddingToCompare, setIsAddingToCompare] = useState(false);
     const [userRating, setUserRating] = useState<{ rating: number; body?: string } | null>(null);
+    const [songs, setSongs] = useState<any[]>([]);
+    const [songsLoading, setSongsLoading] = useState(false);
+    const [songsError, setSongsError] = useState<string | null>(null);
+    const [playingSongId, setPlayingSongId] = useState<string | null>(null);
 
     useEffect(() => {
         if (omdb?.imdbID) {
@@ -139,6 +143,50 @@ export default function MovieDetail() {
     useEffect(() => {
         fetchUserRating();
     }, [user, id]);
+
+    // Fetch songs from JioSaavn when movie is loaded
+    useEffect(() => {
+        if (!movie?.title) return;
+
+        const fetchSongs = async () => {
+            setSongsLoading(true);
+            setSongsError(null);
+            
+            try {
+                // Search for songs using movie title
+                const response = await fetch(`/api/jiosaavn?query=${encodeURIComponent(movie.title)}&limit=10`);
+                
+                if (!response.ok) {
+                    // If API returns error status, set empty songs
+                    setSongs([]);
+                    setSongsError(null); // Don't show error, just show empty state
+                    return;
+                }
+
+                const data = await response.json();
+                const fetchedSongs = data.songs || [];
+                
+                if (fetchedSongs.length === 0 && data.error) {
+                    // API returned empty results with an error message
+                    // Don't show error to user, just show empty state
+                    setSongs([]);
+                    setSongsError(null);
+                } else {
+                    setSongs(fetchedSongs);
+                    setSongsError(null);
+                }
+            } catch (error: any) {
+                console.error('Error fetching songs:', error);
+                // Don't show error to user, just show empty state
+                setSongs([]);
+                setSongsError(null);
+            } finally {
+                setSongsLoading(false);
+            }
+        };
+
+        fetchSongs();
+    }, [movie?.title]);
 
     // Loading State with Skeletons
     if (loading) return (
@@ -493,6 +541,150 @@ export default function MovieDetail() {
                         </CardContent>
                     </Card>
                     
+                    {/* Movie Songs Section */}
+                    <section className="animate-slide-up" style={{ animationDelay: '350ms' }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <Music className="text-primary w-5 h-5 md:w-6 md:h-6" />
+                            <h3 className="text-xl md:text-2xl font-bold">Movie Songs</h3>
+                        </div>
+
+                        {songsLoading ? (
+                            <div className="space-y-3">
+                                {Array.from({ length: 3 }).map((_, i) => (
+                                    <Card key={i} className="glass-card">
+                                        <CardContent className="p-4">
+                                            <Skeleton className="h-4 w-3/4 mb-2" />
+                                            <Skeleton className="h-3 w-1/2" />
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : songsError ? (
+                            <Alert variant="destructive">
+                                <AlertDescription>{songsError}</AlertDescription>
+                            </Alert>
+                        ) : songs.length > 0 ? (
+                            <div className="space-y-3">
+                                {songs.map((song: any, index: number) => {
+                                    const songId = song.id || index.toString();
+                                    const isPlaying = playingSongId === songId;
+                                    const songTitle = song.name || song.title || 'Unknown Song';
+                                    
+                                    // Extract artists from the response structure
+                                    let artists = 'Unknown Artist';
+                                    if (song.artists?.primary && Array.isArray(song.artists.primary)) {
+                                        artists = song.artists.primary.map((a: any) => a.name).join(', ');
+                                    } else if (song.artists && typeof song.artists === 'string') {
+                                        artists = song.artists;
+                                    }
+                                    
+                                    // Extract image URL (use 500x500 quality or first available)
+                                    let imageUrl = null;
+                                    if (song.image && Array.isArray(song.image)) {
+                                        const highResImage = song.image.find((img: any) => img.quality === '500x500');
+                                        imageUrl = highResImage?.url || song.image[0]?.url || song.image[0];
+                                    } else if (song.image) {
+                                        imageUrl = song.image;
+                                    }
+                                    
+                                    // Extract download URL (use 320kbps or highest available)
+                                    let mediaUrl = null;
+                                    if (song.downloadUrl && Array.isArray(song.downloadUrl)) {
+                                        const highQuality = song.downloadUrl.find((url: any) => url.quality === '320kbps');
+                                        const mediumQuality = song.downloadUrl.find((url: any) => url.quality === '160kbps');
+                                        mediaUrl = highQuality?.url || mediumQuality?.url || song.downloadUrl[0]?.url;
+                                    } else if (song.downloadUrl) {
+                                        mediaUrl = song.downloadUrl;
+                                    }
+
+                                    return (
+                                        <Card key={songId} className="glass-card hover-scale transition-smooth animate-scale-in" style={{ animationDelay: `${index * 50}ms` }}>
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center gap-4">
+                                                    {/* Song Image */}
+                                                    {imageUrl && (
+                                                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0">
+                                                            <img 
+                                                                src={imageUrl} 
+                                                                alt={songTitle}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Song Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-base md:text-lg truncate mb-1" title={songTitle}>
+                                                            {songTitle}
+                                                        </h4>
+                                                        <p className="text-sm md:text-base text-muted-foreground truncate" title={artists}>
+                                                            {artists}
+                                                        </p>
+                                                        {song.duration && (
+                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Play Button */}
+                                                    {mediaUrl && (
+                                                        <div className="flex-shrink-0">
+                                                            <audio
+                                                                id={`audio-${songId}`}
+                                                                src={mediaUrl}
+                                                                onPlay={() => setPlayingSongId(songId)}
+                                                                onEnded={() => setPlayingSongId(null)}
+                                                                onPause={() => setPlayingSongId(null)}
+                                                            />
+                                                            <Button
+                                                                size="icon"
+                                                                variant={isPlaying ? "default" : "outline"}
+                                                                onClick={() => {
+                                                                    const audio = document.getElementById(`audio-${songId}`) as HTMLAudioElement;
+                                                                    if (!audio) return;
+
+                                                                    // Stop all other audio
+                                                                    document.querySelectorAll('audio').forEach(a => {
+                                                                        if (a.id !== `audio-${songId}`) {
+                                                                            a.pause();
+                                                                            a.currentTime = 0;
+                                                                        }
+                                                                    });
+
+                                                                    if (isPlaying) {
+                                                                        audio.pause();
+                                                                        setPlayingSongId(null);
+                                                                    } else {
+                                                                        audio.play();
+                                                                        setPlayingSongId(songId);
+                                                                    }
+                                                                }}
+                                                                className="rounded-full"
+                                                            >
+                                                                {isPlaying ? (
+                                                                    <Pause className="w-4 h-4 md:w-5 md:h-5" />
+                                                                ) : (
+                                                                    <Play className="w-4 h-4 md:w-5 md:h-5" />
+                                                                )}
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <Alert>
+                                <AlertDescription className="text-sm text-muted-foreground">
+                                    No songs found for this movie.
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                    </section>
+
                     {/* Full Awards List */}
                     <section className="animate-slide-up" style={{ animationDelay: '400ms' }}>
                         <div className="flex items-center gap-2 mb-4">
