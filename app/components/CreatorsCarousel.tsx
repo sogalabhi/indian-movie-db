@@ -11,15 +11,17 @@ import { Button } from '@/components/ui/button';
 
 interface CreatorsCarouselProps {
   className?: string;
+  role?: string; // Filter creators by role (e.g., 'Director', 'Actor')
+  carouselId?: string; // Unique ID for the carousel container (for scrolling)
 }
 
-export default function CreatorsCarousel({ className = '' }: CreatorsCarouselProps) {
+export default function CreatorsCarousel({ className = '', role, carouselId = 'creators-carousel' }: CreatorsCarouselProps) {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [followingStates, setFollowingStates] = useState<Record<string, boolean>>({});
 
-  console.log('🎠 CreatorsCarousel: Component mounted');
+  console.log('🎠 CreatorsCarousel: Component mounted', role ? `(filtering by role: ${role})` : '');
 
   // Fetch creators from Firestore
   useEffect(() => {
@@ -37,9 +39,14 @@ export default function CreatorsCarousel({ className = '' }: CreatorsCarouselPro
         }
 
         const data = await response.json();
-        const fetchedCreators = data.creators || [];
+        let fetchedCreators = data.creators || [];
         
-        console.log(`✅ CreatorsCarousel: Received ${fetchedCreators.length} creators`);
+        // Filter by role if specified
+        if (role) {
+          fetchedCreators = fetchedCreators.filter((creator: Creator) => creator.role === role);
+        }
+        
+        console.log(`✅ CreatorsCarousel: Received ${fetchedCreators.length} creators${role ? ` (filtered by ${role})` : ''}`);
         setCreators(fetchedCreators);
 
         // Fetch follow status for each creator (if user is logged in)
@@ -63,14 +70,14 @@ export default function CreatorsCarousel({ className = '' }: CreatorsCarouselPro
   };
 
   const scrollLeft = () => {
-    const container = document.getElementById('creators-carousel');
+    const container = document.getElementById(carouselId);
     if (container) {
       container.scrollBy({ left: -300, behavior: 'smooth' });
     }
   };
 
   const scrollRight = () => {
-    const container = document.getElementById('creators-carousel');
+    const container = document.getElementById(carouselId);
     if (container) {
       container.scrollBy({ left: 300, behavior: 'smooth' });
     }
@@ -133,7 +140,7 @@ export default function CreatorsCarousel({ className = '' }: CreatorsCarouselPro
         </Button>
         
         <div
-          id="creators-carousel"
+          id={carouselId}
           className="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >

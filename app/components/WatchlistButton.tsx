@@ -20,6 +20,7 @@ interface WatchlistButtonProps {
   variant?: 'default' | 'outline' | 'ghost' | 'secondary';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
+  lazyCheck?: boolean; // Only check watchlist status on hover/click, not on mount
 }
 
 export default function WatchlistButton({
@@ -28,16 +29,22 @@ export default function WatchlistButton({
   variant = 'outline',
   size = 'default',
   className = '',
+  lazyCheck = false, // Default to false for backward compatibility
 }: WatchlistButtonProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [inWatchlist, setInWatchlist] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(!lazyCheck); // Only check immediately if not lazy
+  const [hasChecked, setHasChecked] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
-  // Check if movie is in watchlist
+  // Check if movie is in watchlist (only if not lazy)
   useEffect(() => {
+    if (lazyCheck || hasChecked) {
+      return; // Skip if lazy check is enabled or already checked
+    }
+
     const checkWatchlist = async () => {
       if (!user || authLoading) {
         setChecking(false);
@@ -54,13 +61,38 @@ export default function WatchlistButton({
         console.error('Error checking watchlist:', error);
       } finally {
         setChecking(false);
+        setHasChecked(true);
       }
     };
 
     checkWatchlist();
-  }, [user, authLoading, movieId]);
+  }, [user, authLoading, movieId, lazyCheck, hasChecked]);
+
+  // Lazy check on hover or click
+  const handleInteraction = async () => {
+    if (lazyCheck && !hasChecked && user && !authLoading) {
+      setChecking(true);
+      try {
+        const response = await fetch(`/api/watchlist/${movieId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setInWatchlist(data.inWatchlist);
+        }
+      } catch (error) {
+        console.error('Error checking watchlist:', error);
+      } finally {
+        setChecking(false);
+        setHasChecked(true);
+      }
+    }
+  };
 
   const handleToggle = async () => {
+    // Trigger lazy check if needed
+    if (lazyCheck && !hasChecked) {
+      await handleInteraction();
+    }
+
     // Show login dialog if not authenticated
     if (!user) {
       setShowLoginDialog(true);
@@ -124,6 +156,7 @@ export default function WatchlistButton({
         variant={variant}
         size={size}
         onClick={handleToggle}
+        onMouseEnter={lazyCheck ? handleInteraction : undefined}
         disabled={loading}
         className={`${className} transition-smooth hover-scale`}
         title={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}

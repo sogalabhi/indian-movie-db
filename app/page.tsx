@@ -27,7 +27,7 @@ export default function Home() {
   const [language, setLanguage] = useState('kn');
   const { addToCompare, isInComparison, canAddMore } = useComparison();
   const { user, loading: authLoading, signOut } = useAuth();
-  
+
   interface Movie {
     id: number;
     title: string;
@@ -88,7 +88,7 @@ export default function Home() {
           params.append('query', debouncedQuery);
 
           const response = await fetch(`/api/movies?${params.toString()}`);
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'Failed to fetch movies');
@@ -109,7 +109,7 @@ export default function Home() {
       // Check cache first for non-search queries
       const cacheKey = `movies_${language}`;
       const cached = getCache<Movie[]>(cacheKey);
-      
+
       if (cached) {
         setMovies(cached);
         setLoading(false);
@@ -123,7 +123,7 @@ export default function Home() {
         params.append('language', language);
 
         const response = await fetch(`/api/movies?${params.toString()}`);
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to fetch movies');
@@ -132,7 +132,7 @@ export default function Home() {
         const data = await response.json();
         const results = data.results || [];
         setMovies(results);
-        
+
         // Cache for 5 minutes
         setCache(cacheKey, results, 5 * 60 * 1000);
       } catch (error: any) {
@@ -159,7 +159,7 @@ export default function Home() {
       // Check cache first
       const cacheKey = `genre_movies_${language}`;
       const cached = getCache<Record<number, { movies: Movie[]; loading: boolean; error: string | null }>>(cacheKey);
-      
+
       if (cached) {
         setGenreMovies(cached);
         return;
@@ -176,7 +176,7 @@ export default function Home() {
       const promises = genres.map(async (genre) => {
         try {
           const response = await fetch(`/api/movies/genre?genre_id=${genre.id}&language=${language}&page=1`);
-          
+
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || `Failed to fetch ${genre.name} movies`);
@@ -210,7 +210,7 @@ export default function Home() {
       });
 
       setGenreMovies(updatedGenreMovies);
-      
+
       // Cache for 5 minutes
       setCache(cacheKey, updatedGenreMovies, 5 * 60 * 1000);
     };
@@ -236,7 +236,7 @@ export default function Home() {
         imdb8: { movies: Movie[]; loading: boolean; error: string | null };
         rt80: { movies: Movie[]; loading: boolean; error: string | null };
       }>(cacheKey);
-      
+
       if (cached) {
         setHighRatedMovies(cached);
         return;
@@ -257,7 +257,7 @@ export default function Home() {
       // Process IMDb 8+ results
       let imdb8Movies: Movie[] = [];
       let imdb8Error: string | null = null;
-      
+
       if (imdb8Result.status === 'fulfilled') {
         try {
           const response = await imdb8Result.value.json();
@@ -289,7 +289,7 @@ export default function Home() {
       // Process RT 80%+ results
       let rt80Movies: Movie[] = [];
       let rt80Error: string | null = null;
-      
+
       if (rt80Result.status === 'fulfilled') {
         try {
           const response = await rt80Result.value.json();
@@ -342,7 +342,7 @@ export default function Home() {
     try {
       const response = await fetch(`/api/movies/${movie.id}`);
       if (!response.ok) throw new Error('Failed to fetch movie details');
-      
+
       const fullMovie = await response.json();
 
       addToCompare({
@@ -376,7 +376,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
-      
+
       {/* Header & Controls */}
       <div className="space-y-4 mb-6 md:mb-8 animate-fade-in">
         {/* First Row: Logo, Navigation, Login, Theme Toggle */}
@@ -386,7 +386,7 @@ export default function Home() {
             <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2 whitespace-nowrap">
               <Film className="w-6 h-6 md:w-8 md:h-8" /> ABCD
             </h1>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-4">
               <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
@@ -395,7 +395,7 @@ export default function Home() {
                   <span className="font-semibold">News</span>
                 </Link>
               </Button>
-              
+
               {user && (
                 <>
                   <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground transition-smooth">
@@ -414,7 +414,7 @@ export default function Home() {
               )}
             </div>
           </div>
-          
+
           {/* Right: Auth & Theme Toggle */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {!authLoading && (
@@ -425,8 +425,8 @@ export default function Home() {
                       <User className="w-4 h-4" />
                       <span className="font-medium">{user.displayName || user.email?.split('@')[0] || 'User'}</span>
                     </div>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       onClick={handleLogout}
                       className="text-muted-foreground hover:text-foreground transition-smooth"
                     >
@@ -486,135 +486,6 @@ export default function Home() {
         </Alert>
       )}
 
-      {/* Genre Sections - Only show when not searching */}
-      {!debouncedQuery && (
-        <div className="space-y-8 mb-12">
-          {genres.map((genre) => {
-            const genreData = genreMovies[genre.id];
-            const isLoading = genreData?.loading ?? true;
-            const genreMoviesList = genreData?.movies ?? [];
-
-            return (
-              <div key={genre.id} className="space-y-3 md:space-y-4 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground">{genre.name} Movies</h2>
-                  {genreMoviesList.length > 0 && (
-                    <Button variant="ghost" size="sm" asChild className="transition-smooth">
-                      <Link href={`/genre/${genre.id}?name=${genre.name}`} className="flex items-center gap-1">
-                        View All <ChevronRight className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-                
-                {isLoading ? (
-                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden glass-card animate-pulse">
-                        <div className="h-[210px] md:h-[270px]">
-                          <Skeleton className="w-full h-full" />
-                        </div>
-                        <CardContent className="p-3 md:p-4">
-                          <Skeleton className="h-4 w-full mb-2" />
-                          <Skeleton className="h-3 w-2/3" />
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : genreData?.error ? (
-                  <Alert variant="destructive">
-                    <AlertDescription className="text-sm">{genreData.error}</AlertDescription>
-                  </Alert>
-                ) : genreMoviesList.length > 0 ? (
-                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
-                    scrollSnapType: 'x mandatory'
-                  } as React.CSSProperties}>
-                    {genreMoviesList.map((movie, index) => {
-                      const inComparison = isInComparison(movie.id);
-                      const isAdding = addingMovieId === movie.id;
-                      const disabled = !canAddMore && !inComparison;
-
-                      return (
-                        <div 
-                          key={movie.id} 
-                          className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
-                          style={{ 
-                            scrollSnapAlign: 'start',
-                            animationDelay: `${index * 50}ms`
-                          }}
-                        >
-                          <Link href={`/movie/${movie.id}`} className="block h-full">
-                            <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
-                                <img
-                                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                                  alt={movie.title}
-                                  className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                                  style={{ objectFit: 'cover', objectPosition: 'center' }}
-                                />
-                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                  <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
-                                    View Details
-                                  </Badge>
-                                </div>
-                              </div>
-                              <CardContent className="p-3 md:p-4 flex-grow flex flex-col justify-end">
-                                <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
-                                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                                    {movie.vote_average?.toFixed(1)}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {movie.release_date?.split('-')[0]}
-                                  </span>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </Link>
-                          <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
-                            <RatingButton
-                              movieId={movie.id}
-                              movieTitle={movie.title}
-                              variant="secondary"
-                              size="icon"
-                              showBadge={false}
-                              className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
-                            />
-                            <Button
-                              size="icon"
-                              onClick={(e) => handleAddToCompare(e, movie)}
-                              disabled={disabled || inComparison || isAdding}
-                              variant={inComparison ? "default" : "secondary"}
-                              className="rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
-                              title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
-                            >
-                              {isAdding ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : inComparison ? (
-                                <Check className="w-4 h-4" />
-                              ) : (
-                                <Scale className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <Alert>
-                    <AlertDescription className="text-sm text-muted-foreground">
-                      No {genre.name.toLowerCase()} movies found.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Top Filmmakers Section - Only show when not searching */}
       {!debouncedQuery && (
@@ -622,7 +493,17 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold text-foreground">Top Filmmakers</h2>
           </div>
-          <CreatorsCarousel className="w-full" />
+          <CreatorsCarousel className="w-full" role="Director" carouselId="directors-carousel" />
+        </div>
+      )}
+
+      {/* Top Actors Section - Only show when not searching */}
+      {!debouncedQuery && (
+        <div className="space-y-4 mb-12 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Top Actors</h2>
+          </div>
+          <CreatorsCarousel className="w-full" role="Actor" carouselId="actors-carousel" />
         </div>
       )}
 
@@ -680,7 +561,7 @@ export default function Home() {
                 <AlertDescription className="text-sm">{highRatedMovies.imdb8.error}</AlertDescription>
               </Alert>
             ) : highRatedMovies.imdb8.movies.length > 0 ? (
-              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{
                 scrollSnapType: 'x mandatory'
               } as React.CSSProperties}>
                 {highRatedMovies.imdb8.movies.map((movie, index) => {
@@ -689,10 +570,10 @@ export default function Home() {
                   const disabled = !canAddMore && !inComparison;
 
                   return (
-                    <div 
-                      key={movie.id} 
-                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
-                      style={{ 
+                    <div
+                      key={movie.id}
+                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
+                      style={{
                         scrollSnapAlign: 'start',
                         animationDelay: `${index * 50}ms`
                       }}
@@ -741,6 +622,7 @@ export default function Home() {
                           variant="secondary"
                           size="icon"
                           showBadge={false}
+                          lazyCheck={true}
                           className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                         />
                         <Button
@@ -808,7 +690,7 @@ export default function Home() {
                 <AlertDescription className="text-sm">{highRatedMovies.rt80.error}</AlertDescription>
               </Alert>
             ) : highRatedMovies.rt80.movies.length > 0 ? (
-              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{ 
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{
                 scrollSnapType: 'x mandatory'
               } as React.CSSProperties}>
                 {highRatedMovies.rt80.movies.map((movie, index) => {
@@ -817,10 +699,10 @@ export default function Home() {
                   const disabled = !canAddMore && !inComparison;
 
                   return (
-                    <div 
-                      key={movie.id} 
-                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up" 
-                      style={{ 
+                    <div
+                      key={movie.id}
+                      className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
+                      style={{
                         scrollSnapAlign: 'start',
                         animationDelay: `${index * 50}ms`
                       }}
@@ -869,6 +751,7 @@ export default function Home() {
                           variant="secondary"
                           size="icon"
                           showBadge={false}
+                          lazyCheck={true}
                           className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                         />
                         <Button
@@ -900,6 +783,138 @@ export default function Home() {
               </Alert>
             )}
           </div>
+        </div>
+      )}
+
+
+      {/* Genre Sections - Only show when not searching */}
+      {!debouncedQuery && (
+        <div className="space-y-8 mb-12">
+          {genres.map((genre) => {
+            const genreData = genreMovies[genre.id];
+            const isLoading = genreData?.loading ?? true;
+            const genreMoviesList = genreData?.movies ?? [];
+
+            return (
+              <div key={genre.id} className="space-y-3 md:space-y-4 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground">{genre.name} Movies</h2>
+                  {genreMoviesList.length > 0 && (
+                    <Button variant="ghost" size="sm" asChild className="transition-smooth">
+                      <Link href={`/genre/${genre.id}?name=${genre.name}`} className="flex items-center gap-1">
+                        View All <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+
+                {isLoading ? (
+                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Card key={i} className="min-w-[140px] md:min-w-[180px] flex-shrink-0 overflow-hidden glass-card animate-pulse">
+                        <div className="h-[210px] md:h-[270px]">
+                          <Skeleton className="w-full h-full" />
+                        </div>
+                        <CardContent className="p-3 md:p-4">
+                          <Skeleton className="h-4 w-full mb-2" />
+                          <Skeleton className="h-3 w-2/3" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : genreData?.error ? (
+                  <Alert variant="destructive">
+                    <AlertDescription className="text-sm">{genreData.error}</AlertDescription>
+                  </Alert>
+                ) : genreMoviesList.length > 0 ? (
+                  <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scroll-smooth scrollbar-hide" style={{
+                    scrollSnapType: 'x mandatory'
+                  } as React.CSSProperties}>
+                    {genreMoviesList.map((movie, index) => {
+                      const inComparison = isInComparison(movie.id);
+                      const isAdding = addingMovieId === movie.id;
+                      const disabled = !canAddMore && !inComparison;
+
+                      return (
+                        <div
+                          key={movie.id}
+                          className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
+                          style={{
+                            scrollSnapAlign: 'start',
+                            animationDelay: `${index * 50}ms`
+                          }}
+                        >
+                          <Link href={`/movie/${movie.id}`} className="block h-full">
+                            <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
+                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                                <img
+                                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
+                                  alt={movie.title}
+                                  className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+                                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                                />
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                  <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
+                                    View Details
+                                  </Badge>
+                                </div>
+                              </div>
+                              <CardContent className="p-3 md:p-4 flex-grow flex flex-col justify-end">
+                                <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
+                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                    {movie.vote_average?.toFixed(1)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {movie.release_date?.split('-')[0]}
+                                  </span>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                          <div className="absolute top-2 right-2 z-10 flex gap-1.5 md:gap-2">
+                            <RatingButton
+                              movieId={movie.id}
+                              movieTitle={movie.title}
+                              variant="secondary"
+                              size="icon"
+                              showBadge={false}
+                              lazyCheck={true}
+                              className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
+                            />
+                            <Button
+                              size="icon"
+                              onClick={(e) => handleAddToCompare(e, movie)}
+                              disabled={disabled || inComparison || isAdding}
+                              variant={inComparison ? "default" : "secondary"}
+                              className="rounded-full shadow-lg transition-smooth h-8 w-8 md:h-9 md:w-9 glass-card"
+                              title={inComparison ? 'Already in comparison' : disabled ? 'Maximum 4 movies allowed' : 'Add to comparison'}
+                            >
+                              {isAdding ? (
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : inComparison ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <Scale className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Alert>
+                    <AlertDescription className="text-sm text-muted-foreground">
+                      No {genre.name.toLowerCase()} movies found.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -937,8 +952,8 @@ export default function Home() {
               const disabled = !canAddMore && !inComparison;
 
               return (
-                <div 
-                  key={movie.id} 
+                <div
+                  key={movie.id}
                   className="relative h-full animate-scale-in"
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
@@ -979,6 +994,7 @@ export default function Home() {
                       movieId={movie.id}
                       variant="secondary"
                       size="icon"
+                      lazyCheck={true}
                       className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                     />
                     <RatingButton
@@ -987,6 +1003,7 @@ export default function Home() {
                       variant="secondary"
                       size="icon"
                       showBadge={false}
+                      lazyCheck={true}
                       className="rounded-full shadow-lg glass-card h-8 w-8 md:h-9 md:w-9"
                     />
                     <Button
@@ -1011,11 +1028,11 @@ export default function Home() {
             })
           ) : (
             <div className="col-span-full mt-10 animate-fade-in">
-               <Alert className="text-center glass-card">
-                 <AlertDescription className="text-muted-foreground">
-                    No movies found matching your criteria.
-                 </AlertDescription>
-               </Alert>
+              <Alert className="text-center glass-card">
+                <AlertDescription className="text-muted-foreground">
+                  No movies found matching your criteria.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </div>

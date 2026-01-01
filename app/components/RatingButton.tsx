@@ -16,6 +16,7 @@ interface RatingButtonProps {
   className?: string;
   showBadge?: boolean; // Show rating badge on card
   onSave?: () => void;
+  lazyCheck?: boolean; // Only check rating on hover/click, not on mount
 }
 
 interface Review {
@@ -33,17 +34,23 @@ export default function RatingButton({
   className = '',
   showBadge = false,
   onSave,
+  lazyCheck = false, // Default to false for backward compatibility
 }: RatingButtonProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [hasRating, setHasRating] = useState(false);
   const [rating, setRating] = useState(0);
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(!lazyCheck); // Only check immediately if not lazy
+  const [hasChecked, setHasChecked] = useState(false);
   const [existingReview, setExistingReview] = useState<Review | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Check if movie has rating
+  // Check if movie has rating (only if not lazy or if user is available)
   useEffect(() => {
+    if (lazyCheck || hasChecked) {
+      return; // Skip if lazy check is enabled or already checked
+    }
+
     const checkRating = async () => {
       if (!user || authLoading) {
         setChecking(false);
@@ -73,20 +80,59 @@ export default function RatingButton({
         console.error('Error checking rating:', error);
       } finally {
         setChecking(false);
+        setHasChecked(true);
       }
     };
 
     checkRating();
-  }, [user, authLoading, movieId]);
+  }, [user, authLoading, movieId, lazyCheck, hasChecked]);
+
+  // Lazy check on hover or click
+  const handleInteraction = async () => {
+    if (lazyCheck && !hasChecked && user && !authLoading) {
+      setChecking(true);
+      try {
+        const response = await fetch(`/api/reviews/user/${movieId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.review) {
+            setHasRating(true);
+            setRating(data.review.rating);
+            setExistingReview({
+              id: data.review.id,
+              rating: data.review.rating,
+              body: data.review.body,
+              watchedAt: data.review.watchedAt,
+            });
+          } else {
+            setHasRating(false);
+            setRating(0);
+            setExistingReview(undefined);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking rating:', error);
+      } finally {
+        setChecking(false);
+        setHasChecked(true);
+      }
+    }
+  };
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
+    // Trigger lazy check if needed
+    if (lazyCheck && !hasChecked) {
+      handleInteraction();
+    }
+    
     if (!user) {
       router.push('/login');
       return;
     }
+
     setDialogOpen(true);
   };
 
@@ -137,6 +183,7 @@ export default function RatingButton({
         variant={variant}
         size={size}
         onClick={handleClick}
+        onMouseEnter={lazyCheck ? handleInteraction : undefined}
         className={`${className} transition-smooth hover-scale`}
         title={hasRating ? `Update rating (${rating}/10)` : 'Rate this movie'}
       >

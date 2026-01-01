@@ -62,6 +62,28 @@ const DIRECTORS = [
   { id: '1752058', name: 'Rishab Shetty', role: 'Director' }, // ✅ Correct ID from https://www.themoviedb.org/person/1752058
 ];
 
+// Actors to seed with their TMDB IDs
+const ACTORS = [
+  { id: '116924', name: 'Mahesh Babu', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/116924-mahesh-babu
+  { id: '108215', name: 'Allu Arjun', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/108215-allu-arjun
+  { id: '237045', name: 'Prabhas', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/237045-prabhas
+  { id: '148037', name: 'N.T. Rama Rao Jr.', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/148037-n-t-rama-rao-jr
+  { id: '91555', name: 'Rajinikanth', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/91555-rajinikanth
+  { id: '91547', name: 'Unknown', role: 'Actor' }, // ID from https://www.themoviedb.org/person/91547 (name will be fetched from TMDB)
+  { id: '93193', name: 'Kamal Haasan', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/93193-kamal-haasan
+  { id: '148360', name: 'Ajith Kumar', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/148360-ajith-kumar
+  { id: '124111', name: 'Mammootty', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/124111-mammootty
+  { id: '82732', name: 'Mohanlal', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/82732-mohanlal
+  { id: '1115225', name: 'Dulquer Salmaan', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/1115225-dulquer-salmaan
+  { id: '1293681', name: 'Yash', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/1293681-yash
+  { id: '389604', name: 'Sudeep', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/389604-sudeep
+  { id: '1752058', name: 'Rishab Shetty', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/1752058-rishab-shetty
+  { id: '35742', name: 'Unknown', role: 'Actor' }, // ID from https://www.themoviedb.org/person/35742 (name will be fetched from TMDB)
+  { id: '85034', name: 'Unknown', role: 'Actor' }, // ID from https://www.themoviedb.org/person/85034 (name will be fetched from TMDB)
+  { id: '224223', name: 'Ranveer Singh', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/224223-ranveer-singh
+  { id: '1469935', name: 'Vicky Kaushal', role: 'Actor' }, // ✅ Correct ID from https://www.themoviedb.org/person/1469935-vicky-kaushal
+];
+
 interface SeedResult {
   success: boolean;
   creator: Creator | null;
@@ -276,9 +298,12 @@ async function seedCreators() {
   
   const results: SeedResult[] = [];
   
-  // Seed each director
-  for (const director of DIRECTORS) {
-    const result = await seedCreator(director, firestoreDb);
+  // Combine directors and actors
+  // const ALL_CREATORS = [...DIRECTORS, ...ACTORS];
+  
+  // Seed each creator
+  for (const creator of ACTORS) {
+    const result = await seedCreator(creator, firestoreDb);
     results.push(result);
     
     // Small delay to avoid rate limiting
@@ -309,8 +334,8 @@ async function seedCreators() {
   if (failed.length > 0) {
     console.log(`\n❌ Failed to seed:`);
     failed.forEach((result, index) => {
-      const director = DIRECTORS[results.indexOf(result)];
-      console.log(`   ${index + 1}. ${director.name} (ID: ${director.id})`);
+      const creator = ACTORS[results.indexOf(result)];
+      console.log(`   ${index + 1}. ${creator.name} (ID: ${creator.id})`);
       if (result.error) {
         console.log(`      Error: ${result.error}`);
       }
