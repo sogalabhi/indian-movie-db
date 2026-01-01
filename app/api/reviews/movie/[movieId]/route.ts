@@ -8,6 +8,9 @@ interface ReviewData {
   body?: string;
   watchedAt: any;
   likesCount: number;
+  helpfulCount?: number; // New: count of helpful votes (default: 0)
+  notHelpfulCount?: number; // New: count of not helpful votes (default: 0)
+  commentsCount?: number; // New: denormalized comment count (default: 0)
   createdAt: any;
   updatedAt: any;
 }
@@ -33,6 +36,13 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const sortBy = searchParams.get('sortBy') || 'newest';
+    
+    // Filter params
+    const filter = searchParams.get('filter');
+    const ratingMin = searchParams.get('ratingMin') ? parseInt(searchParams.get('ratingMin')!, 10) : null;
+    const ratingMax = searchParams.get('ratingMax') ? parseInt(searchParams.get('ratingMax')!, 10) : null;
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
 
     if (!adminDb) {
       return NextResponse.json(
@@ -49,16 +59,60 @@ export async function GET(
       .where('movieId', '==', movieId)
       .get();
 
-    const total = allSnapshot.size;
-
     // Map to review objects
     let allReviews = allSnapshot.docs.map((doc) => {
       const data = doc.data() as ReviewData;
       return {
         id: doc.id,
         ...data,
+        helpfulCount: data.helpfulCount || 0,
+        notHelpfulCount: data.notHelpfulCount || 0,
+        commentsCount: data.commentsCount || 0,
       };
     });
+
+    // Apply filtering in memory
+    if (filter === 'with_text') {
+      allReviews = allReviews.filter((review) => {
+        return review.body && review.body.trim().length > 0;
+      });
+    }
+
+    if (ratingMin !== null) {
+      allReviews = allReviews.filter((review) => review.rating >= ratingMin);
+    }
+
+    if (ratingMax !== null) {
+      allReviews = allReviews.filter((review) => review.rating <= ratingMax);
+    }
+
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      allReviews = allReviews.filter((review) => {
+        const reviewDate = review.createdAt?.toMillis?.() 
+          ? new Date(review.createdAt.toMillis())
+          : review.createdAt?.getTime?.()
+          ? new Date(review.createdAt.getTime())
+          : new Date(review.createdAt);
+        return reviewDate >= fromDate;
+      });
+    }
+
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999); // End of day
+      allReviews = allReviews.filter((review) => {
+        const reviewDate = review.createdAt?.toMillis?.() 
+          ? new Date(review.createdAt.toMillis())
+          : review.createdAt?.getTime?.()
+          ? new Date(review.createdAt.getTime())
+          : new Date(review.createdAt);
+        return reviewDate <= toDate;
+      });
+    }
+
+    // Update total after filtering
+    const total = allReviews.length;
 
     // Apply sorting in memory
     switch (sortBy) {

@@ -1,10 +1,16 @@
 'use client';
 
-import { Star, Calendar, Heart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Star, Calendar } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { getAvatarColor, getInitials } from '@/lib/avatar-utils';
+import LikeButton from './LikeButton';
+import HelpfulnessButtons from './HelpfulnessButtons';
+import ReviewCommentsSection from './ReviewCommentsSection';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface ReviewCardProps {
   review: {
@@ -14,6 +20,9 @@ interface ReviewCardProps {
     body?: string;
     watchedAt: Date | string | { toMillis?: () => number; getTime?: () => number };
     likesCount: number;
+    helpfulCount?: number;
+    notHelpfulCount?: number;
+    commentsCount?: number;
     createdAt: Date | string | { toMillis?: () => number; getTime?: () => number };
     user: {
       username: string;
@@ -24,6 +33,47 @@ interface ReviewCardProps {
 }
 
 export default function ReviewCard({ review }: ReviewCardProps) {
+  const { user } = useAuth();
+  const [liked, setLiked] = useState(false);
+  const [helpful, setHelpful] = useState<boolean | null>(null);
+  const [helpfulCount, setHelpfulCount] = useState(review.helpfulCount || 0);
+  const [notHelpfulCount, setNotHelpfulCount] = useState(review.notHelpfulCount || 0);
+  const [likesCount, setLikesCount] = useState(review.likesCount);
+
+  // Fetch like and helpfulness status
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchStatus = async () => {
+      try {
+        // Fetch like status
+        const likeResponse = await fetch(`/api/reviews/${review.id}/like`);
+        if (likeResponse.ok) {
+          const likeData = await likeResponse.json();
+          setLiked(likeData.liked);
+        }
+
+        // Fetch helpfulness status
+        const helpfulResponse = await fetch(`/api/reviews/${review.id}/helpful`);
+        if (helpfulResponse.ok) {
+          const helpfulData = await helpfulResponse.json();
+          setHelpful(helpfulData.helpful);
+        }
+      } catch (error) {
+        console.error('Error fetching review status:', error);
+      }
+    };
+
+    fetchStatus();
+  }, [user, review.id]);
+
+  // Calculate helpfulness percentage
+  const totalHelpfulnessVotes = helpfulCount + notHelpfulCount;
+  const helpfulnessPercentage = totalHelpfulnessVotes > 0 
+    ? Math.round((helpfulCount / totalHelpfulnessVotes) * 100) 
+    : 0;
+  const isMostHelpful = helpfulnessPercentage >= 80 && totalHelpfulnessVotes >= 5;
+
   // Format date helper
   const formatDate = (date: Date | string | { toMillis?: () => number; getTime?: () => number }) => {
     try {
@@ -78,7 +128,14 @@ export default function ReviewCard({ review }: ReviewCardProps) {
             {/* Header: Username and Rating */}
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-sm md:text-base truncate">{review.user.username}</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-sm md:text-base truncate">{review.user.username}</h4>
+                  {isMostHelpful && (
+                    <Badge variant="default" className="text-xs">
+                      Most Helpful
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-1">
                   {/* Star Rating */}
                   <div className="flex items-center gap-0.5">
@@ -98,14 +155,6 @@ export default function ReviewCard({ review }: ReviewCardProps) {
                   </span>
                 </div>
               </div>
-              
-              {/* Likes Count */}
-              {review.likesCount > 0 && (
-                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-                  <Heart className="h-3 w-3 fill-current" />
-                  {review.likesCount}
-                </Badge>
-              )}
             </div>
 
             {/* Review Text */}
@@ -116,13 +165,50 @@ export default function ReviewCard({ review }: ReviewCardProps) {
             )}
 
             {/* Footer: Dates */}
-            <div className="flex items-center gap-4 text-xs md:text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-xs md:text-sm text-muted-foreground mb-3">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3 md:h-4 md:w-4" />
                 <span>Watched {formatDate(review.watchedAt)}</span>
               </div>
               <span>•</span>
               <span>Reviewed {formatDate(review.createdAt)}</span>
+            </div>
+
+            {/* Action Buttons: Like, Helpfulness, Comments */}
+            <div className="flex items-center gap-3 flex-wrap pt-3 border-t border-border">
+              <LikeButton
+                targetId={review.id}
+                targetType="review"
+                initialLiked={liked}
+                initialCount={likesCount}
+                size="sm"
+                onLikeChange={(newLiked, newCount) => {
+                  setLiked(newLiked);
+                  setLikesCount(newCount);
+                }}
+              />
+
+              <HelpfulnessButtons
+                reviewId={review.id}
+                initialHelpful={helpful}
+                initialHelpfulCount={helpfulCount}
+                initialNotHelpfulCount={notHelpfulCount}
+                onVoteChange={(newHelpful, newHelpfulCount, newNotHelpfulCount) => {
+                  setHelpful(newHelpful);
+                  setHelpfulCount(newHelpfulCount);
+                  setNotHelpfulCount(newNotHelpfulCount);
+                }}
+              />
+
+              <ReviewCommentsSection
+                reviewId={review.id}
+                reviewSummary={{
+                  username: review.user.username,
+                  rating: review.rating,
+                  body: review.body,
+                }}
+                commentsCount={review.commentsCount || 0}
+              />
             </div>
           </div>
         </div>

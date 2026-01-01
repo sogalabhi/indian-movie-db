@@ -74,12 +74,22 @@ export default function MovieDetail() {
                             { timeout: 10000 } // 10 second timeout
                         );
                         
-                        if (!omdbRes.data.error) {
+                        // Check if data is available (not marked as unavailable)
+                        if (!omdbRes.data.error && !omdbRes.data.unavailable) {
                             setOmdb(omdbRes.data);
                         }
-                    } catch (omdbError) {
-                        console.error('Error fetching OMDB data:', omdbError);
-                        // Continue without OMDB data if it fails
+                    } catch (omdbError: any) {
+                        // Silently handle OMDb errors - API key issues or rate limits
+                        // Don't show errors to user, just continue without OMDb data
+                        if (process.env.NODE_ENV === 'development') {
+                            // Only log in development
+                            if (omdbError.response?.status === 401) {
+                                console.warn('OMDb API key issue - ratings unavailable');
+                            } else {
+                                console.warn('Could not fetch OMDb data:', omdbError.message);
+                            }
+                        }
+                        // Continue without OMDb data - it's optional
                     }
                 }
             } catch (error: any) {
@@ -260,10 +270,10 @@ export default function MovieDetail() {
 
                     {/* Box Office Card */}
                     <Card className="glass-card animate-scale-in" style={{ animationDelay: '100ms' }}>
-                        <CardHeader>
+                        <CardHeader className="p-3 md:p-4 pb-0">
                             <CardTitle className="text-base md:text-lg">Financials</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3 md:space-y-4">
+                        <CardContent className="p-3 md:p-4 space-y-3 md:space-y-4">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground text-sm md:text-base">Box Office</span>
                                 <span className="font-bold text-primary text-sm md:text-base">{omdb?.BoxOffice !== 'N/A' ? omdb?.BoxOffice : 'N/A'}</span>
@@ -335,7 +345,7 @@ export default function MovieDetail() {
                     {/* User Rating Display */}
                     {user && userRating && (
                         <Card className="glass-card animate-scale-in" style={{ animationDelay: '400ms' }}>
-                            <CardContent className="p-4 md:p-6">
+                            <CardContent className="p-3 md:p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-sm md:text-base font-semibold">Your Rating</h3>
                                     <RatingButton
@@ -413,7 +423,7 @@ export default function MovieDetail() {
                     {/* Cast & Crew */}
                     <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
                         <Card className="glass-card hover-scale">
-                            <CardContent className="p-4 md:p-6">
+                            <CardContent className="p-3 md:p-4">
                                 <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
                                     <Clapperboard className="text-primary w-5 h-5" /> Director
                                 </h3>
@@ -422,7 +432,7 @@ export default function MovieDetail() {
                             </CardContent>
                         </Card>
                         <Card className="glass-card hover-scale">
-                             <CardContent className="p-4 md:p-6">
+                             <CardContent className="p-3 md:p-4">
                                 <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
                                     <Users className="text-primary w-5 h-5" /> Cast
                                 </h3>
@@ -437,7 +447,7 @@ export default function MovieDetail() {
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                             {/* IMDb */}
                             <Card className="glass-card text-center hover-scale transition-smooth">
-                                <CardContent className="p-4 md:p-6">
+                                <CardContent className="p-3 md:p-4">
                                     <span className="block text-yellow-500 text-2xl md:text-3xl font-bold mb-1">{omdb?.imdbRating || 'N/A'}</span>
                                     <span className="text-xs md:text-sm text-muted-foreground">IMDb Rating</span>
                                     <span className="block text-[10px] md:text-xs text-muted-foreground mt-1">{omdb?.imdbVotes} votes</span>
@@ -446,7 +456,7 @@ export default function MovieDetail() {
 
                             {/* Rotten Tomatoes */}
                             <Card className="glass-card text-center hover-scale transition-smooth">
-                                <CardContent className="p-4 md:p-6">
+                                <CardContent className="p-3 md:p-4">
                                     <span className="block text-destructive text-2xl md:text-3xl font-bold mb-1">
                                         {omdb?.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value || 'N/A'}
                                     </span>
@@ -456,7 +466,7 @@ export default function MovieDetail() {
 
                             {/* Metascore */}
                             <Card className="glass-card text-center hover-scale transition-smooth col-span-2 md:col-span-1">
-                                <CardContent className="p-4 md:p-6">
+                                <CardContent className="p-3 md:p-4">
                                     <span className="block text-primary text-2xl md:text-3xl font-bold mb-1">{omdb?.Metascore !== 'N/A' ? omdb?.Metascore : '-'}</span>
                                     <span className="text-xs md:text-sm text-muted-foreground">Metascore</span>
                                 </CardContent>

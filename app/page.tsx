@@ -9,6 +9,7 @@ import { useAuth } from './contexts/AuthContext';
 import WatchlistButton from './components/WatchlistButton';
 import RatingButton from './components/RatingButton';
 import { ThemeToggle } from './components/ThemeToggle';
+import CreatorsCarousel from './components/CreatorsCarousel';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -513,7 +514,7 @@ export default function Home() {
                         <div className="h-[210px] md:h-[270px]">
                           <Skeleton className="w-full h-full" />
                         </div>
-                        <CardContent className="p-3">
+                        <CardContent className="p-3 md:p-4">
                           <Skeleton className="h-4 w-full mb-2" />
                           <Skeleton className="h-3 w-2/3" />
                         </CardContent>
@@ -557,7 +558,7 @@ export default function Home() {
                                   </Badge>
                                 </div>
                               </div>
-                              <CardContent className="p-3 flex-grow flex flex-col justify-end">
+                              <CardContent className="p-3 md:p-4 flex-grow flex flex-col justify-end">
                                 <h3 className="font-bold text-sm md:text-base truncate mb-1" title={movie.title}>{movie.title}</h3>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground">
                                   <span className="flex items-center gap-1">
@@ -612,6 +613,16 @@ export default function Home() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Top Filmmakers Section - Only show when not searching */}
+      {!debouncedQuery && (
+        <div className="space-y-4 mb-12 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Top Filmmakers</h2>
+          </div>
+          <CreatorsCarousel className="w-full" />
         </div>
       )}
 

@@ -9,6 +9,9 @@ interface ReviewData {
   body?: string; // Optional review text
   watchedAt: any; // Firestore Timestamp or Date
   likesCount: number; // Denormalized (default: 0)
+  helpfulCount: number; // New: count of helpful votes (default: 0)
+  notHelpfulCount: number; // New: count of not helpful votes (default: 0)
+  commentsCount: number; // New: denormalized comment count (default: 0)
   createdAt: any; // Firestore Timestamp or Date
   updatedAt: any; // Firestore Timestamp or Date
 }
@@ -139,6 +142,9 @@ export async function POST(request: NextRequest) {
         body: reviewBody || '',
         watchedAt: watchedDate,
         likesCount: 0,
+        helpfulCount: 0,
+        notHelpfulCount: 0,
+        commentsCount: 0,
         createdAt: now,
         updatedAt: now,
       };

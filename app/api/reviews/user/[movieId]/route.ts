@@ -14,7 +14,7 @@ interface ReviewData {
 }
 
 /**
- * GET /api/reviews/[movieId]
+ * GET /api/reviews/user/[movieId]
  * Get review for specific movie (for current user)
  */
 export async function GET(
@@ -61,7 +61,7 @@ export async function GET(
 }
 
 /**
- * PUT /api/reviews/[movieId]
+ * PUT /api/reviews/user/[movieId]
  * Update review
  */
 export async function PUT(
@@ -154,7 +154,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/reviews/[movieId]
+ * DELETE /api/reviews/user/[movieId]
  * Delete review (mark as unwatched)
  */
 export async function DELETE(

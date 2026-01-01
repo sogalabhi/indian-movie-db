@@ -85,7 +85,7 @@ export default function MarkWatchedButton({
   const handleSave = () => {
     setIsWatched(true);
     // Refetch review to get updated data
-    fetch(`/api/reviews/${movieId}`)
+    fetch(`/api/reviews/user/${movieId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.review) {

@@ -193,7 +193,7 @@ export default function WatchedPage() {
   const handleDelete = async (reviewId: string, movieId: string) => {
     setRemoving(reviewId);
     try {
-      const response = await fetch(`/api/reviews/${movieId}`, {
+      const response = await fetch(`/api/reviews/user/${movieId}`, {
         method: 'DELETE',
       });
 
@@ -308,7 +308,7 @@ export default function WatchedPage() {
         {reviews.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8 animate-fade-in">
             <Card className="glass-card">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Total Watched</p>
@@ -320,7 +320,7 @@ export default function WatchedPage() {
             </Card>
 
             <Card className="glass-card">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Average Rating</p>
@@ -332,7 +332,7 @@ export default function WatchedPage() {
             </Card>
 
             <Card className="glass-card">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Top Rated (9-10)</p>
@@ -344,7 +344,7 @@ export default function WatchedPage() {
             </Card>
 
             <Card className="glass-card">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Rating Distribution</p>

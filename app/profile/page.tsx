@@ -153,10 +153,10 @@ export default function ProfilePage() {
 
         {/* Quick Actions */}
         <Card className="glass-card mb-6 animate-scale-in" style={{ animationDelay: '300ms' }}>
-          <CardHeader>
+          <CardHeader className="p-3 md:p-4 pb-0">
             <CardTitle className="text-lg md:text-xl">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="p-3 md:p-4 space-y-3">
             <Button variant="outline" asChild className="w-full justify-start transition-smooth">
               <Link href="/watchlist" className="flex items-center gap-2">
                 <BookmarkCheck className="w-4 h-4" />
@@ -174,10 +174,10 @@ export default function ProfilePage() {
 
         {/* Account Actions */}
         <Card className="glass-card animate-scale-in" style={{ animationDelay: '400ms' }}>
-          <CardHeader>
+          <CardHeader className="p-3 md:p-4 pb-0">
             <CardTitle className="text-lg md:text-xl">Account</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-4">
             <Button
               variant="destructive"
               onClick={handleLogout}

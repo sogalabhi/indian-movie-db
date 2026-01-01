@@ -98,15 +98,32 @@ export default function ComparePage() {
         const omdbPromises = moviesWithImdbId.map(async ({ movie, imdbId }, index) => {
           if (index > 0) await new Promise((resolve) => setTimeout(resolve, index * 200));
           return axios.get(`/api/omdb?imdbId=${imdbId}`, { timeout: 10000 })
-            .then((response) => ({ movieId: movie.id, data: response.data }))
-            .catch((error) => ({ movieId: movie.id, data: null }));
+            .then((response) => {
+              // Check if data is available (not marked as unavailable)
+              if (response.data && !response.data.error && !response.data.unavailable) {
+                return { movieId: movie.id, data: response.data };
+              }
+              return { movieId: movie.id, data: null };
+            })
+            .catch((error) => {
+              // Silently handle errors - don't log in production
+              if (process.env.NODE_ENV === 'development') {
+                console.warn(`Could not fetch OMDb data for ${imdbId}`);
+              }
+              return { movieId: movie.id, data: null };
+            });
         });
 
         const omdbResponses = await Promise.all(omdbPromises);
         const omdbMap: Record<number, any> = {};
         omdbResponses.forEach(({ movieId, data }) => { if (data) omdbMap[movieId] = data; });
         setOmdbData((prev) => ({ ...prev, ...omdbMap }));
-      } catch (error) { console.error('Error fetching OMDB data:', error); } finally {
+      } catch (error) {
+        // Silently handle errors - don't log in production
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Error fetching OMDB data:', error);
+        }
+      } finally {
         setLoadingOmdb((prev) => {
           const newState = { ...prev };
           moviesWithImdbId.forEach(({ movie }) => { newState[movie.id] = false; });
@@ -193,7 +210,7 @@ export default function ComparePage() {
           </Button>
 
           <Card className="glass-card p-8 md:p-12 text-center animate-scale-in">
-            <CardContent className="flex flex-col items-center">
+            <CardContent className="p-3 md:p-4 flex flex-col items-center">
               <div className="bg-muted p-4 md:p-6 rounded-full mb-4 md:mb-6">
                  <Film className="w-10 h-10 md:w-12 md:h-12 text-muted-foreground" />
               </div>

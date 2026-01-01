@@ -60,35 +60,34 @@ export async function GET(request: Request) {
 
     return NextResponse.json(response.data);
   } catch (error: any) {
-    // Log detailed error information for debugging
-    console.error('Error fetching movie details from OMDB:');
-    console.error('Status:', error.response?.status);
-    console.error('Error data:', error.response?.data);
-    console.error('Error message:', error.message);
-    console.error('API Key length:', API_KEY?.length);
-    console.error('API Key first 4 chars:', API_KEY?.substring(0, 4));
-    
-    // Handle 401 Unauthorized specifically
+    // Handle 401 Unauthorized specifically - return graceful error
     if (error.response?.status === 401) {
-      const omdbErrorMsg = error.response?.data?.Error || error.response?.data?.error || 'Unauthorized access to OMDb API';
-      console.error('OMDb API Error:', omdbErrorMsg);
+      // Log in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('OMDb API key issue - returning graceful error');
+      }
       
+      // Return a simple error object that won't cause client-side issues
       return NextResponse.json(
         { 
-          error: 'OMDb API key is invalid or expired. Please check your NEXT_PUBLIC_OMDB_API_KEY in .env.local',
-          details: omdbErrorMsg,
-          hint: 'Get a free API key at https://www.omdbapi.com/apikey.aspx'
+          error: 'Could not fetch ratings data',
+          unavailable: true
         },
-        { status: 401 }
+        { status: 200 } // Return 200 so client doesn't treat it as an error
       );
     }
     
-    const errorMessage = error.response?.data?.Error || error.response?.data?.error || error.message || 'Failed to fetch movie details';
-    const statusCode = error.response?.status || 500;
-
+    // For other errors, also return gracefully
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('OMDb API error:', error.response?.status || error.message);
+    }
+    
     return NextResponse.json(
-      { error: errorMessage },
-      { status: statusCode }
+      { 
+        error: 'Could not fetch ratings data',
+        unavailable: true
+      },
+      { status: 200 } // Return 200 so client doesn't treat it as an error
     );
   }
 }

@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { MessageSquare, ChevronLeft, ChevronRight, Loader2, AlertCircle, Filter, X } from 'lucide-react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import ReviewCard from './ReviewCard';
 import RatingDialog from './RatingDialog';
+import { cn } from '@/lib/utils';
 
 interface Review {
   id: string;
@@ -18,7 +22,11 @@ interface Review {
   body?: string;
   watchedAt: Date | string | { toMillis?: () => number; getTime?: () => number };
   likesCount: number;
+  helpfulCount?: number;
+  notHelpfulCount?: number;
+  commentsCount?: number;
   createdAt: Date | string | { toMillis?: () => number; getTime?: () => number };
+  updatedAt?: Date | string | { toMillis?: () => number; getTime?: () => number };
   user: {
     username: string;
     avatarUrl?: string | null;
@@ -41,6 +49,43 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
   const [totalPages, setTotalPages] = useState(1);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Filter state
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [withTextOnly, setWithTextOnly] = useState(true); // Default enabled
+  const [ratingMin, setRatingMin] = useState<number | ''>('');
+  const [ratingMax, setRatingMax] = useState<number | ''>('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem(`review-filters-${movieId}`);
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        setWithTextOnly(filters.withTextOnly !== undefined ? filters.withTextOnly : true);
+        setRatingMin(filters.ratingMin || '');
+        setRatingMax(filters.ratingMax || '');
+        setDateFrom(filters.dateFrom || '');
+        setDateTo(filters.dateTo || '');
+      } catch (error) {
+        console.error('Error loading saved filters:', error);
+      }
+    }
+  }, [movieId]);
+
+  // Save filters to localStorage
+  useEffect(() => {
+    const filters = {
+      withTextOnly,
+      ratingMin,
+      ratingMax,
+      dateFrom,
+      dateTo,
+    };
+    localStorage.setItem(`review-filters-${movieId}`, JSON.stringify(filters));
+  }, [withTextOnly, ratingMin, ratingMax, dateFrom, dateTo, movieId]);
 
   // Fetch reviews
   useEffect(() => {
@@ -54,6 +99,23 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
           limit: '10',
           sortBy,
         });
+
+        // Add filter params
+        if (withTextOnly) {
+          params.append('filter', 'with_text');
+        }
+        if (ratingMin !== '') {
+          params.append('ratingMin', ratingMin.toString());
+        }
+        if (ratingMax !== '') {
+          params.append('ratingMax', ratingMax.toString());
+        }
+        if (dateFrom) {
+          params.append('dateFrom', dateFrom);
+        }
+        if (dateTo) {
+          params.append('dateTo', dateTo);
+        }
 
         const response = await fetch(`/api/reviews/movie/${movieId}?${params.toString()}`);
 
@@ -76,7 +138,7 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
     };
 
     fetchReviews();
-  }, [movieId, page, sortBy]);
+  }, [movieId, page, sortBy, withTextOnly, ratingMin, ratingMax, dateFrom, dateTo]);
 
   // Check if current user has reviewed
   useEffect(() => {
@@ -87,7 +149,7 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
       }
 
       try {
-        const response = await fetch(`/api/reviews/${movieId}`);
+        const response = await fetch(`/api/reviews/user/${movieId}`);
         if (response.ok) {
           const data = await response.json();
           setUserHasReviewed(!!data.review);
@@ -119,6 +181,23 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
     setUserHasReviewed(true);
     // The useEffect will automatically refetch
   };
+
+  const clearFilters = () => {
+    setWithTextOnly(true); // Reset to default
+    setRatingMin('');
+    setRatingMax('');
+    setDateFrom('');
+    setDateTo('');
+    setPage(1);
+  };
+
+  const activeFiltersCount = [
+    withTextOnly,
+    ratingMin !== '',
+    ratingMax !== '',
+    dateFrom !== '',
+    dateTo !== '',
+  ].filter(Boolean).length;
 
   if (loading && reviews.length === 0) {
     return (
@@ -162,6 +241,22 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
+          {/* Filter Button */}
+          <Button
+            variant="outline"
+            onClick={() => setFilterDrawerOpen(!filterDrawerOpen)}
+            className="transition-smooth flex-shrink-0"
+            size="sm"
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filters
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5">
+                {activeFiltersCount}
+              </Badge>
+            )}
+          </Button>
+
           {/* Write Review Button */}
           {user && !userHasReviewed && (
             <Button
@@ -190,6 +285,193 @@ export default function ReviewsSection({ movieId, movieTitle }: ReviewsSectionPr
           )}
         </div>
       </div>
+
+      {/* Filter Drawer */}
+      {filterDrawerOpen && (
+        <Card className="glass-card animate-in slide-in-from-top-2">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Filters</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setFilterDrawerOpen(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {/* With Text Only Toggle */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="withTextOnly"
+                  checked={withTextOnly}
+                  onChange={(e) => {
+                    setWithTextOnly(e.target.checked);
+                    setPage(1);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="withTextOnly" className="text-sm font-normal cursor-pointer">
+                  Show only reviews with text
+                </Label>
+              </div>
+
+              {/* Rating Range */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Rating Range</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    placeholder="Min"
+                    value={ratingMin}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                      setRatingMin(value as number | '');
+                      setPage(1);
+                    }}
+                    className="w-20"
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    placeholder="Max"
+                    value={ratingMax}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                      setRatingMax(value as number | '');
+                      setPage(1);
+                    }}
+                    className="w-20"
+                  />
+                </div>
+              </div>
+
+              {/* Date Range */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Date Range</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => {
+                      setDateFrom(e.target.value);
+                      setPage(1);
+                    }}
+                    className="flex-1"
+                  />
+                  <span className="text-muted-foreground">to</span>
+                  <Input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => {
+                      setDateTo(e.target.value);
+                      setPage(1);
+                    }}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="w-full"
+                  size="sm"
+                >
+                  Clear All Filters
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Filters Display */}
+      {activeFiltersCount > 0 && !filterDrawerOpen && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">Active filters:</span>
+          {withTextOnly && (
+            <Badge variant="secondary" className="text-xs">
+              With text only
+              <button
+                onClick={() => {
+                  setWithTextOnly(false);
+                  setPage(1);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {ratingMin !== '' && (
+            <Badge variant="secondary" className="text-xs">
+              Rating ≥ {ratingMin}
+              <button
+                onClick={() => {
+                  setRatingMin('');
+                  setPage(1);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {ratingMax !== '' && (
+            <Badge variant="secondary" className="text-xs">
+              Rating ≤ {ratingMax}
+              <button
+                onClick={() => {
+                  setRatingMax('');
+                  setPage(1);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {dateFrom && (
+            <Badge variant="secondary" className="text-xs">
+              From {new Date(dateFrom).toLocaleDateString()}
+              <button
+                onClick={() => {
+                  setDateFrom('');
+                  setPage(1);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {dateTo && (
+            <Badge variant="secondary" className="text-xs">
+              To {new Date(dateTo).toLocaleDateString()}
+              <button
+                onClick={() => {
+                  setDateTo('');
+                  setPage(1);
+                }}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (

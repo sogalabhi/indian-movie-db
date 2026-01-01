@@ -51,7 +51,7 @@ export default function RatingButton({
       }
 
       try {
-        const response = await fetch(`/api/reviews/${movieId}`);
+        const response = await fetch(`/api/reviews/user/${movieId}`);
         if (response.ok) {
           const data = await response.json();
           if (data.review) {

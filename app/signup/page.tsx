@@ -122,13 +122,13 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-20 md:pb-4">
       <Card className="glass-card w-full max-w-md animate-scale-in">
-        <CardHeader className="space-y-1">
+        <CardHeader className="p-3 md:p-4 pb-0 space-y-1">
           <CardTitle className="text-xl md:text-2xl font-bold text-center">Create Account</CardTitle>
           <CardDescription className="text-center text-sm">
             Enter your information to create a new account
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 md:p-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive" className="glass-card animate-fade-in">
