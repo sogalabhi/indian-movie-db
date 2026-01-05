@@ -115,6 +115,494 @@
   --sidebar-ring: oklch(0.38 0.189 293.745);
 }
 
+/* ============================================
+   MOVIE THEMES - CSS Variables
+   ============================================ */
+
+/* TOXIC Theme - Noir • Decadence • Power */
+.toxic-theme {
+  --background: #0B0A08;
+  --foreground: #E6D3B1;
+  --card: #15110D;
+  --card-foreground: #E6D3B1;
+  --primary: #C9A24D;
+  --primary-foreground: #0B0A08;
+  --secondary: #D17A22;
+  --secondary-foreground: #E6D3B1;
+  --muted: #6E6256;
+  --muted-foreground: #C9B8A0;
+  --accent: #C9A24D;
+  --accent-foreground: #0B0A08;
+  --border: rgba(201, 162, 77, 0.15);
+  --ring: rgba(201, 162, 77, 0.4);
+  --font-heading: var(--font-cinzel);
+  --font-title: var(--font-playfair);
+}
+
+.toxic-theme.dark {
+  --background: #0B0A08;
+  --foreground: #E6D3B1;
+  --card: #15110D;
+  --card-foreground: #E6D3B1;
+  --primary: #C9A24D;
+  --primary-foreground: #0B0A08;
+  --secondary: #D17A22;
+  --muted: #6E6256;
+  --accent: #C9A24D;
+  --border: rgba(201, 162, 77, 0.15);
+}
+
+/* TOXIC Theme - Video Background */
+.toxic-theme .hero-video {
+  opacity: 1;
+  filter: contrast(1.15) saturate(0.85) brightness(0.75);
+}
+
+.toxic-theme .hero-overlay {
+  background: radial-gradient(
+      circle at center,
+      rgba(0,0,0,0.6),
+      rgba(0,0,0,0.95)
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(11,10,8,0.95),
+      rgba(11,10,8,0.85),
+      rgba(11,10,8,0.97)
+    );
+}
+
+/* TOXIC Theme - Cards */
+.toxic-theme .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(201, 162, 77, 0.18),
+    rgba(11, 10, 8, 0.96)
+  );
+  border: 1px solid rgba(201, 162, 77, 0.15);
+}
+
+.toxic-theme .glass-card:hover {
+  box-shadow: 0 0 30px rgba(201, 162, 77, 0.25);
+  transform: translateY(-2px);
+}
+
+/* TOXIC Theme - Section Headers */
+.toxic-theme .section-title::after {
+  content: " ▪";
+  opacity: 0.6;
+}
+
+/* TOXIC Theme - Typography */
+.toxic-theme h1,
+.toxic-theme .section-title {
+  font-family: var(--font-cinzel);
+  letter-spacing: 0.08em;
+}
+
+.toxic-theme .movie-title {
+  font-family: var(--font-playfair);
+}
+
+/* Ramayana Theme - Vanavaasam • Dharma • Divinity */
+.rama-theme {
+  --background: #0F1A14;
+  --foreground: #E9E4D4;
+  --card: #16241C;
+  --card-foreground: #E9E4D4;
+  --primary: #CFA44A;
+  --primary-foreground: #0F1A14;
+  --secondary: #4F6F52;
+  --secondary-foreground: #E9E4D4;
+  --muted: #7A5A3A;
+  --muted-foreground: #BFAF8A;
+  --accent: #CFA44A;
+  --accent-foreground: #0F1A14;
+  --border: rgba(207, 164, 74, 0.15);
+  --ring: rgba(207, 164, 74, 0.3);
+  --font-heading: var(--font-tiro-devanagari);
+  --font-title: var(--font-noto-serif);
+  --font-body: var(--font-noto-serif);
+}
+
+.rama-theme.dark {
+  --background: #0F1A14;
+  --foreground: #E9E4D4;
+  --card: #16241C;
+  --card-foreground: #E9E4D4;
+  --primary: #CFA44A;
+  --primary-foreground: #0F1A14;
+  --secondary: #4F6F52;
+  --muted: #7A5A3A;
+  --accent: #CFA44A;
+  --border: rgba(207, 164, 74, 0.15);
+}
+
+/* Ramayana Theme - Video Background */
+.rama-theme .hero-video {
+  opacity: 1;
+  filter: saturate(1.05) contrast(1.05);
+}
+
+.rama-theme .hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 26, 20, 0.92),
+    rgba(15, 26, 20, 0.65),
+    rgba(15, 26, 20, 0.95)
+  );
+}
+
+/* Ramayana Theme - Cards */
+.rama-theme .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(79, 111, 82, 0.25),
+    rgba(15, 26, 20, 0.95)
+  );
+  border: 1px solid rgba(207, 164, 74, 0.15);
+}
+
+.rama-theme .glass-card:hover {
+  box-shadow: 0 0 28px rgba(207, 164, 74, 0.22);
+}
+
+/* Ramayana Theme - Section Headers */
+.rama-theme .section-title::before {
+  content: "॥ ";
+  opacity: 0.6;
+}
+
+.rama-theme .section-title::after {
+  content: " ॥";
+  opacity: 0.6;
+}
+
+/* Ramayana Theme - Typography */
+.rama-theme h1,
+.rama-theme .section-title {
+  font-family: var(--font-tiro-devanagari);
+  letter-spacing: 0.06em;
+}
+
+.rama-theme .movie-title,
+.rama-theme p {
+  font-family: var(--font-noto-serif);
+  line-height: 1.85;
+}
+
+/* Varanasi Theme - Kaal • Shaurya • Dust */
+.varanasi-theme {
+  --background: #0A0604;
+  --foreground: #F5E6C8;
+  --card: #15100C;
+  --card-foreground: #F5E6C8;
+  --primary: #B45309;
+  --primary-foreground: #0A0604;
+  --secondary: #8B5E3C;
+  --secondary-foreground: #F5E6C8;
+  --muted: #C9B8A0;
+  --muted-foreground: #D6C3A5;
+  --accent: #B45309;
+  --accent-foreground: #0A0604;
+  --border: rgba(180, 83, 9, 0.2);
+  --ring: rgba(180, 83, 9, 0.4);
+  --font-heading: var(--font-cinzel);
+  --font-title: var(--font-geist-sans);
+  --font-body: var(--font-geist-sans);
+}
+
+.varanasi-theme.dark {
+  --background: #0A0604;
+  --foreground: #F5E6C8;
+  --card: #15100C;
+  --card-foreground: #F5E6C8;
+  --primary: #B45309;
+  --primary-foreground: #0A0604;
+  --secondary: #8B5E3C;
+  --muted: #C9B8A0;
+  --accent: #B45309;
+  --border: rgba(180, 83, 9, 0.2);
+}
+
+/* Varanasi Theme - Video Background */
+.varanasi-theme .hero-video {
+  opacity: 1;
+  filter: saturate(0.9) contrast(1.1);
+}
+
+.varanasi-theme .hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 6, 4, 0.92),
+    rgba(10, 6, 4, 0.75),
+    rgba(10, 6, 4, 0.95)
+  );
+}
+
+/* Varanasi Theme - Cards */
+.varanasi-theme .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(180, 83, 9, 0.25),
+    rgba(20, 12, 8, 0.95)
+  );
+  border: 1px solid rgba(180, 83, 9, 0.2);
+}
+
+.varanasi-theme .glass-card:hover {
+  box-shadow: 0 0 24px rgba(180, 83, 9, 0.25);
+}
+
+/* Varanasi Theme - Section Headers */
+.varanasi-theme .section-title::before {
+  content: "॥ ";
+  opacity: 0.6;
+}
+
+.varanasi-theme .section-title::after {
+  content: " ॥";
+  opacity: 0.6;
+}
+
+/* Varanasi Theme - Typography */
+.varanasi-theme h1,
+.varanasi-theme .section-title {
+  font-family: var(--font-cinzel);
+  letter-spacing: 0.06em;
+}
+
+/* Subtle card styling for themed movies in listings */
+.toxic-theme-card-subtle {
+  border-color: rgba(201, 162, 77, 0.25) !important;
+}
+
+.toxic-theme-card-subtle:hover {
+  box-shadow: 0 0 20px rgba(201, 162, 77, 0.2);
+}
+
+.rama-theme-card-subtle {
+  border-color: rgba(207, 164, 74, 0.2) !important;
+}
+
+.rama-theme-card-subtle:hover {
+  box-shadow: 0 0 20px rgba(207, 164, 74, 0.18);
+}
+
+.varanasi-theme-card-subtle {
+  border-color: rgba(180, 83, 9, 0.25) !important;
+}
+
+.varanasi-theme-card-subtle:hover {
+  box-shadow: 0 0 20px rgba(180, 83, 9, 0.2);
+}
+
+/* ============================================
+   GLOBAL THEME CLASSES (for next-themes)
+   ============================================ */
+
+/* TOXIC Theme - Global Class */
+.toxic {
+  --background: #0B0A08;
+  --foreground: #E6D3B1;
+  --card: #15110D;
+  --card-foreground: #E6D3B1;
+  --primary: #C9A24D;
+  --primary-foreground: #0B0A08;
+  --secondary: #D17A22;
+  --secondary-foreground: #E6D3B1;
+  --muted: #6E6256;
+  --muted-foreground: #C9B8A0;
+  --accent: #C9A24D;
+  --accent-foreground: #0B0A08;
+  --border: rgba(201, 162, 77, 0.15);
+  --ring: rgba(201, 162, 77, 0.4);
+  --font-heading: var(--font-cinzel);
+  --font-title: var(--font-playfair);
+}
+
+.toxic .hero-video {
+  opacity: 1;
+  filter: contrast(1.15) saturate(0.85) brightness(0.75);
+}
+
+.toxic .hero-overlay {
+  background: radial-gradient(
+      circle at center,
+      rgba(0,0,0,0.6),
+      rgba(0,0,0,0.95)
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(11,10,8,0.95),
+      rgba(11,10,8,0.85),
+      rgba(11,10,8,0.97)
+    );
+}
+
+.toxic .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(201, 162, 77, 0.18),
+    rgba(11, 10, 8, 0.96)
+  );
+  border: 1px solid rgba(201, 162, 77, 0.15);
+}
+
+.toxic .glass-card:hover {
+  box-shadow: 0 0 30px rgba(201, 162, 77, 0.25);
+  transform: translateY(-2px);
+}
+
+.toxic .section-title::after {
+  content: " ▪";
+  opacity: 0.6;
+}
+
+.toxic h1,
+.toxic .section-title {
+  font-family: var(--font-cinzel);
+  letter-spacing: 0.08em;
+}
+
+.toxic .movie-title {
+  font-family: var(--font-playfair);
+}
+
+/* Ramayana Theme - Global Class */
+.rama {
+  --background: #0F1A14;
+  --foreground: #E9E4D4;
+  --card: #16241C;
+  --card-foreground: #E9E4D4;
+  --primary: #CFA44A;
+  --primary-foreground: #0F1A14;
+  --secondary: #4F6F52;
+  --secondary-foreground: #E9E4D4;
+  --muted: #7A5A3A;
+  --muted-foreground: #BFAF8A;
+  --accent: #CFA44A;
+  --accent-foreground: #0F1A14;
+  --border: rgba(207, 164, 74, 0.15);
+  --ring: rgba(207, 164, 74, 0.3);
+  --font-heading: var(--font-tiro-devanagari);
+  --font-title: var(--font-noto-serif);
+  --font-body: var(--font-noto-serif);
+}
+
+.rama .hero-video {
+  opacity: 1;
+  filter: saturate(1.05) contrast(1.05);
+}
+
+.rama .hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(15, 26, 20, 0.92),
+    rgba(15, 26, 20, 0.65),
+    rgba(15, 26, 20, 0.95)
+  );
+}
+
+.rama .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(79, 111, 82, 0.25),
+    rgba(15, 26, 20, 0.95)
+  );
+  border: 1px solid rgba(207, 164, 74, 0.15);
+}
+
+.rama .glass-card:hover {
+  box-shadow: 0 0 28px rgba(207, 164, 74, 0.22);
+}
+
+.rama .section-title::before {
+  content: "॥ ";
+  opacity: 0.6;
+}
+
+.rama .section-title::after {
+  content: " ॥";
+  opacity: 0.6;
+}
+
+.rama h1,
+.rama .section-title {
+  font-family: var(--font-tiro-devanagari);
+  letter-spacing: 0.06em;
+}
+
+.rama .movie-title,
+.rama p {
+  font-family: var(--font-noto-serif);
+  line-height: 1.85;
+}
+
+/* Varanasi Theme - Global Class */
+.varanasi {
+  --background: #0A0604;
+  --foreground: #F5E6C8;
+  --card: #15100C;
+  --card-foreground: #F5E6C8;
+  --primary: #B45309;
+  --primary-foreground: #0A0604;
+  --secondary: #8B5E3C;
+  --secondary-foreground: #F5E6C8;
+  --muted: #C9B8A0;
+  --muted-foreground: #D6C3A5;
+  --accent: #B45309;
+  --accent-foreground: #0A0604;
+  --border: rgba(180, 83, 9, 0.2);
+  --ring: rgba(180, 83, 9, 0.4);
+  --font-heading: var(--font-cinzel);
+  --font-title: var(--font-geist-sans);
+  --font-body: var(--font-geist-sans);
+}
+
+.varanasi .hero-video {
+    opacity: 1;
+  filter: saturate(1) contrast(1.1);
+}
+
+.varanasi .hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 6, 4, 0.92),
+    rgba(10, 6, 4, 0.75),
+    rgba(10, 6, 4, 0.95)
+  );
+}
+
+.varanasi .glass-card {
+  background: linear-gradient(
+    to top,
+    rgba(180, 83, 9, 0.25),
+    rgba(20, 12, 8, 0.95)
+  );
+  border: 1px solid rgba(180, 83, 9, 0.2);
+}
+
+.varanasi .glass-card:hover {
+  box-shadow: 0 0 24px rgba(180, 83, 9, 0.25);
+}
+
+.varanasi .section-title::before {
+  content: "॥ ";
+  opacity: 0.6;
+}
+
+.varanasi .section-title::after {
+  content: " ॥";
+  opacity: 0.6;
+}
+
+.varanasi h1,
+.varanasi .section-title {
+  font-family: var(--font-cinzel);
+  letter-spacing: 0.06em;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

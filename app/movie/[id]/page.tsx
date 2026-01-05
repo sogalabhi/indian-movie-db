@@ -11,6 +11,9 @@ import MarkWatchedButton from '../../components/MarkWatchedButton';
 import RatingButton from '../../components/RatingButton';
 import ReviewsSection from '../../components/ReviewsSection';
 import { fetchImdbAwards } from '@/lib/movie-utils';
+import { getVideoConfigByTheme } from '@/lib/themes/theme-configs';
+import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
 
 // Shadcn UI Imports
 import { Button } from '@/components/ui/button';
@@ -38,6 +41,8 @@ export default function MovieDetail() {
     const [songsLoading, setSongsLoading] = useState(false);
     const [songsError, setSongsError] = useState<string | null>(null);
     const [playingSongId, setPlayingSongId] = useState<string | null>(null);
+    const [videoError, setVideoError] = useState(false);
+    const [shouldLoadVideo, setShouldLoadVideo] = useState(true);
 
     useEffect(() => {
         if (omdb?.imdbID) {
@@ -143,6 +148,38 @@ export default function MovieDetail() {
     useEffect(() => {
         fetchUserRating();
     }, [user, id]);
+
+    // Check for data saver mode and device performance
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // Check for data saver mode
+            const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+            if (connection?.saveData) {
+                setShouldLoadVideo(false);
+                return;
+            }
+
+            // Check for low-end devices (heuristic: low memory or slow connection)
+            if (connection) {
+                const effectiveType = connection.effectiveType;
+                if (effectiveType === 'slow-2g' || effectiveType === '2g') {
+                    setShouldLoadVideo(false);
+                    return;
+                }
+            }
+
+            // Check device memory if available
+            const deviceMemory = (navigator as any).deviceMemory;
+            if (deviceMemory && deviceMemory < 4) {
+                setShouldLoadVideo(false);
+                return;
+            }
+        }
+    }, []);
+
+    // Get global theme
+    const { theme } = useTheme();
+    const videoConfig = getVideoConfigByTheme(theme || 'dark');
 
     // Fetch songs from JioSaavn when movie is loaded
     useEffect(() => {
@@ -262,12 +299,32 @@ export default function MovieDetail() {
         <div className="min-h-screen bg-background text-foreground font-sans pb-20 md:pb-10">
 
             {/* 1. Hero Section (Backdrop) */}
-            <div
-                className="relative h-[50vh] md:h-[60vh] w-full bg-cover bg-center bg-background"
-                style={movie.backdrop_path ? { backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` } : {}}
-            >
-                {/* Gradient Overlay fading to theme background */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent"></div>
+            <div className="relative h-[50vh] md:h-[60vh] w-full bg-cover bg-center bg-background overflow-hidden">
+                {/* Theme YouTube Video Background */}
+                {videoConfig?.youtube && shouldLoadVideo && !videoError && (
+                    <iframe
+                        className="hero-video absolute inset-0 w-full h-full object-cover pointer-events-none"
+                        src={`https://www.youtube.com/embed/${videoConfig.youtube.videoId}?autoplay=1&mute=1&loop=1&controls=0&start=${videoConfig.youtube.startTime}&end=${videoConfig.youtube.endTime}&playlist=${videoConfig.youtube.videoId}&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen={false}
+                        style={{ border: 'none' }}
+                        onError={() => setVideoError(true)}
+                    />
+                )}
+                
+                {/* Fallback Backdrop Image */}
+                {(!videoConfig?.youtube || videoError || !shouldLoadVideo) && movie.backdrop_path && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` }}
+                    />
+                )}
+
+                {/* Theme Overlay or Gradient Overlay */}
+                <div className={cn(
+                    "absolute inset-0",
+                    videoConfig?.youtube ? "hero-overlay" : "bg-gradient-to-t from-background via-background/60 to-transparent"
+                )}></div>
 
                 {/* Back Button */}
                 <Button
@@ -280,8 +337,11 @@ export default function MovieDetail() {
                 </Button>
 
                 {/* Title & Stats Overlay */}
-                <div className="absolute bottom-6 md:bottom-10 left-4 md:left-6 lg:left-12 max-w-4xl animate-fade-in">
-                    <h1 className="text-2xl md:text-4xl lg:text-6xl font-bold text-foreground drop-shadow-lg mb-3 md:mb-4">{movie.title}</h1>
+                <div className="absolute bottom-6 md:bottom-10 left-4 md:left-6 lg:left-12 max-w-4xl animate-fade-in z-10">
+                    <h1 className={cn(
+                        "text-2xl md:text-4xl lg:text-6xl font-bold text-foreground drop-shadow-lg mb-3 md:mb-4",
+                        (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title"
+                    )}>{movie.title}</h1>
                     <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm lg:text-lg font-medium text-muted-foreground items-center">
                         {/* OMDb Maturity Rating */}
                         {omdb?.Rated && omdb.Rated !== 'N/A' && (
@@ -472,7 +532,7 @@ export default function MovieDetail() {
                     <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
                         <Card className="glass-card hover-scale">
                             <CardContent className="p-3 md:p-4">
-                                <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>
                                     <Clapperboard className="text-primary w-5 h-5" /> Director
                                 </h3>
                                 <p className="text-base md:text-lg">{omdb?.Director || 'N/A'}</p>
@@ -481,7 +541,7 @@ export default function MovieDetail() {
                         </Card>
                         <Card className="glass-card hover-scale">
                              <CardContent className="p-3 md:p-4">
-                                <h3 className="text-lg md:text-xl font-bold mb-3 flex items-center gap-2">
+                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>
                                     <Users className="text-primary w-5 h-5" /> Cast
                                 </h3>
                                 <p className="text-base md:text-lg leading-relaxed">{omdb?.Actors || 'N/A'}</p>
@@ -491,7 +551,7 @@ export default function MovieDetail() {
 
                     {/* Ratings Grid */}
                     <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-                        <h3 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Critic Ratings</h3>
+                        <h3 className={cn("text-xl md:text-2xl font-bold mb-4 md:mb-6", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Critic Ratings</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
                             {/* IMDb */}
                             <Card className="glass-card text-center hover-scale transition-smooth">
@@ -533,7 +593,7 @@ export default function MovieDetail() {
                                 <Trophy className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-xl md:text-2xl font-bold mb-2">Awards & Recognition</h3>
+                                <h3 className={cn("text-xl md:text-2xl font-bold mb-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Awards & Recognition</h3>
                                 <p className="text-base md:text-xl text-muted-foreground font-medium">
                                     {omdb?.Awards !== 'N/A' ? omdb?.Awards : 'No awards recorded.'}
                                 </p>
@@ -545,7 +605,7 @@ export default function MovieDetail() {
                     <section className="animate-slide-up" style={{ animationDelay: '350ms' }}>
                         <div className="flex items-center gap-2 mb-4">
                             <Music className="text-primary w-5 h-5 md:w-6 md:h-6" />
-                            <h3 className="text-xl md:text-2xl font-bold">Movie Songs</h3>
+                            <h3 className={cn("text-xl md:text-2xl font-bold", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Movie Songs</h3>
                         </div>
 
                         {songsLoading ? (
@@ -689,7 +749,7 @@ export default function MovieDetail() {
                     <section className="animate-slide-up" style={{ animationDelay: '400ms' }}>
                         <div className="flex items-center gap-2 mb-4">
                             <Trophy className="text-primary w-5 h-5 md:w-6 md:h-6" />
-                            <h3 className="text-xl md:text-2xl font-bold">Full Awards List</h3>
+                            <h3 className={cn("text-xl md:text-2xl font-bold", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Full Awards List</h3>
                         </div>
 
                         {detailedAwards.length > 0 ? (

@@ -8,7 +8,7 @@ import { useComparison } from './contexts/ComparisonContext';
 import { useAuth } from './contexts/AuthContext';
 import WatchlistButton from './components/WatchlistButton';
 import RatingButton from './components/RatingButton';
-import { ThemeToggle } from './components/ThemeToggle';
+import { ThemeSelector } from './components/ThemeSelector';
 import CreatorsCarousel from './components/CreatorsCarousel';
 
 // Shadcn UI Imports
@@ -21,12 +21,20 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { getCache, setCache } from '@/lib/cache';
+import { cn } from '@/lib/utils';
+import { useTheme } from 'next-themes';
+import { getVideoConfigByTheme } from '@/lib/themes/theme-configs';
 
 export default function Home() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [language, setLanguage] = useState('kn');
   const { addToCompare, isInComparison, canAddMore } = useComparison();
   const { user, loading: authLoading, signOut } = useAuth();
+  const [videoError, setVideoError] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(true);
+  
+  const videoConfig = getVideoConfigByTheme(theme || 'dark');
 
   interface Movie {
     id: number;
@@ -375,7 +383,23 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8 relative">
+      {/* Theme Video Background */}
+      {videoConfig?.youtube && shouldLoadVideo && !videoError && (
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <iframe
+            className="hero-video absolute inset-0 w-full h-full object-cover"
+            src={`https://www.youtube.com/embed/${videoConfig.youtube.videoId}?autoplay=1&mute=1&loop=1&controls=0&start=${videoConfig.youtube.startTime}&end=${videoConfig.youtube.endTime}&playlist=${videoConfig.youtube.videoId}&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+            allow="autoplay; encrypted-media"
+            allowFullScreen={false}
+            style={{ border: 'none' }}
+            onError={() => setVideoError(true)}
+          />
+          <div className="hero-overlay absolute inset-0"></div>
+        </div>
+      )}
+      
+      <div className="relative z-10">
 
       {/* Header & Controls */}
       <div className="space-y-4 mb-6 md:mb-8 animate-fade-in">
@@ -444,7 +468,7 @@ export default function Home() {
                 )}
               </>
             )}
-            <ThemeToggle />
+            <ThemeSelector />
           </div>
         </div>
 
@@ -1037,6 +1061,7 @@ export default function Home() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
