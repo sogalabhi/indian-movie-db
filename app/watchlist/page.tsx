@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Badge } from '@/components/ui/badge';
+import { useTheme } from 'next-themes';
 
 interface WatchlistItem {
   id: string;
@@ -31,6 +32,7 @@ interface Movie {
 export default function WatchlistPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { theme } = useTheme();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [movies, setMovies] = useState<Record<string, Movie>>({});
   const [loading, setLoading] = useState(true);
@@ -227,9 +229,17 @@ export default function WatchlistPage() {
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <Link href={`/movie/${movie.id}`} className="block h-full">
-                    <Card className="glass-card overflow-hidden hover-scale cursor-pointer h-full flex flex-col">
+                    <Card className="glass-card hover-scale cursor-pointer h-full flex flex-col relative">
+                      {theme === 'varanasi' && (
+                        <img 
+                          src="/gopuram.svg" 
+                          alt="" 
+                          className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+                          style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))' }}
+                        />
+                      )}
                       <div className="relative">
-                        <AspectRatio ratio={2 / 3}>
+                        <AspectRatio ratio={2 / 3} className="overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                           <img
                             src={
                               movie.poster_path

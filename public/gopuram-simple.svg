@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" fill="#C9A24D">
+  <!-- Simple Gopuram silhouette -->
+  <path d="M100 0 L110 20 L105 20 L115 40 L108 40 L120 60 L110 60 L110 80 L90 80 L90 60 L80 60 L92 40 L85 40 L95 20 L90 20 Z"/>
+  <!-- Left tower -->
+  <path d="M30 30 L40 50 L35 50 L45 70 L38 70 L38 80 L22 80 L22 70 L15 70 L25 50 L20 50 Z"/>
+  <!-- Right tower -->
+  <path d="M170 30 L160 50 L165 50 L155 70 L162 70 L162 80 L178 80 L178 70 L185 70 L175 50 L180 50 Z"/>
+  <!-- Decorative elements -->
+  <circle cx="100" cy="65" r="5"/>
+  <circle cx="30" cy="65" r="3"/>
+  <circle cx="170" cy="65" r="3"/>
+</svg>
+
+
+

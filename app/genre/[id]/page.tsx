@@ -14,6 +14,7 @@ import WatchlistButton from '@/app/components/WatchlistButton';
 import RatingButton from '@/app/components/RatingButton';
 import { useComparison } from '@/app/contexts/ComparisonContext';
 import { Scale, Check } from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 interface Movie {
   id: number;
@@ -48,6 +49,7 @@ const genreMap: Record<number, string> = {
 function GenrePageContent() {
   const router = useRouter();
   const params = useParams();
+  const { theme } = useTheme();
   const searchParams = useSearchParams();
   const { addToCompare, isInComparison, canAddMore } = useComparison();
   
@@ -227,8 +229,16 @@ function GenrePageContent() {
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <Link href={`/movie/${movie.id}`} className="block h-full">
-                      <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                        <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden">
+                      <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative">
+                        {theme === 'varanasi' && (
+                          <img 
+                            src="/gopuram.svg" 
+                            alt="" 
+                            className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+                            style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))' }}
+                          />
+                        )}
+                        <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                           <img
                             src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                             alt={movie.title}

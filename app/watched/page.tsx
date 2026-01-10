@@ -17,6 +17,7 @@ import RatingButton from '@/app/components/RatingButton';
 import { useComparison } from '@/app/contexts/ComparisonContext';
 import { Scale, Check, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
 
 interface Review {
   id: string;
@@ -42,6 +43,7 @@ export default function WatchedPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { addToCompare, isInComparison, canAddMore } = useComparison();
+  const { theme } = useTheme();
   
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -491,9 +493,17 @@ export default function WatchedPage() {
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <Link href={`/movie/${movie.id}`} className="block h-full">
-                    <Card className="glass-card overflow-hidden hover-scale cursor-pointer h-full flex flex-col">
+                    <Card className="glass-card hover-scale cursor-pointer h-full flex flex-col relative">
+                      {theme === 'varanasi' && (
+                        <img 
+                          src="/gopuram.svg" 
+                          alt="" 
+                          className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
+                          style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))' }}
+                        />
+                      )}
                       <div className="relative">
-                        <div className="h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden">
+                        <div className="h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                           <img
                             src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                             alt={movie.title}

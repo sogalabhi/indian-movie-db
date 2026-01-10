@@ -28,13 +28,19 @@ import { getVideoConfigByTheme } from '@/lib/themes/theme-configs';
 export default function Home() {
   const router = useRouter();
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [language, setLanguage] = useState('kn');
   const { addToCompare, isInComparison, canAddMore } = useComparison();
   const { user, loading: authLoading, signOut } = useAuth();
   const [videoError, setVideoError] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(true);
   
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   const videoConfig = getVideoConfigByTheme(theme || 'dark');
+  const isVaranasiTheme = mounted && (theme === 'varanasi' || theme === 'varanasi-theme');
 
   interface Movie {
     id: number;
@@ -383,7 +389,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8 relative">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 pb-20 md:pb-8 relative" style={{ overflow: 'visible' }}>
       {/* Theme Video Background */}
       {videoConfig?.youtube && shouldLoadVideo && !videoError && (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
@@ -599,12 +605,21 @@ export default function Home() {
                       className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
                       style={{
                         scrollSnapAlign: 'start',
-                        animationDelay: `${index * 50}ms`
+                        animationDelay: `${index * 50}ms`,
+                        overflow: 'visible'
                       }}
                     >
-                      <Link href={`/movie/${movie.id}`} className="block h-full">
-                        <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                      <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
+                        <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
+                          {isVaranasiTheme && (
+                            <img 
+                              src="/gopuram.svg" 
+                              alt="" 
+                              className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
+                            />
+                          )}
+                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                             <img
                               src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                               alt={movie.title}
@@ -728,12 +743,21 @@ export default function Home() {
                       className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
                       style={{
                         scrollSnapAlign: 'start',
-                        animationDelay: `${index * 50}ms`
+                        animationDelay: `${index * 50}ms`,
+                        overflow: 'visible'
                       }}
                     >
-                      <Link href={`/movie/${movie.id}`} className="block h-full">
-                        <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                      <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
+                        <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
+                          {isVaranasiTheme && (
+                            <img 
+                              src="/gopuram.svg" 
+                              alt="" 
+                              className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                              style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
+                            />
+                          )}
+                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                             <img
                               src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                               alt={movie.title}
@@ -865,12 +889,21 @@ export default function Home() {
                           className="relative min-w-[140px] md:min-w-[180px] flex-shrink-0 animate-slide-up"
                           style={{
                             scrollSnapAlign: 'start',
-                            animationDelay: `${index * 50}ms`
+                            animationDelay: `${index * 50}ms`,
+                            overflow: 'visible'
                           }}
                         >
-                          <Link href={`/movie/${movie.id}`} className="block h-full">
-                            <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden">
+                          <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
+                            <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
+                              {isVaranasiTheme && (
+                                <img 
+                                  src="/gopuram.svg" 
+                                  alt="" 
+                                  className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                  style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
+                                />
+                              )}
+                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                                 <img
                                   src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                                   alt={movie.title}
@@ -968,7 +1001,7 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6" style={{ marginTop: isVaranasiTheme ? '70px' : '0', overflow: 'visible' }}>
           {movies.length > 0 ? (
             movies.map((movie, index) => {
               const inComparison = isInComparison(movie.id);
@@ -979,11 +1012,31 @@ export default function Home() {
                 <div
                   key={movie.id}
                   className="relative h-full animate-scale-in"
-                  style={{ animationDelay: `${index * 30}ms` }}
+                  style={{ animationDelay: `${index * 30}ms`, overflow: 'visible' }}
                 >
-                  <Link href={`/movie/${movie.id}`} className="block h-full">
-                    <Card className="glass-card overflow-hidden hover-scale cursor-pointer group h-full flex flex-col">
-                      <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden">
+                  <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
+                    <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
+                      {/* Gopuram SVG for Varanasi theme */}
+                      {isVaranasiTheme && (
+                        <div 
+                          className="absolute left-0 right-0 pointer-events-none"
+                          style={{ 
+                            top: '-60px',
+                            height: '60px',
+                            zIndex: 9999,
+                          }}
+                        >
+                          <img 
+                            src="/gopuram-simple.svg" 
+                            alt="Gopuram"
+                            className="w-full h-full"
+                            style={{ 
+                              filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.6))',
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                         <img
                           src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
                           alt={movie.title}

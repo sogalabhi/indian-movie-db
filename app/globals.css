@@ -293,36 +293,36 @@
 
 /* Varanasi Theme - Kaal • Shaurya • Dust */
 .varanasi-theme {
-  --background: #0A0604;
-  --foreground: #F5E6C8;
+  --background: #0E0B07;
+  --foreground: #F5F3EE;
   --card: #15100C;
-  --card-foreground: #F5E6C8;
-  --primary: #B45309;
-  --primary-foreground: #0A0604;
-  --secondary: #8B5E3C;
-  --secondary-foreground: #F5E6C8;
+  --card-foreground: #F5F3EE;
+  --primary: #C9A24D;
+  --primary-foreground: #0E0B07;
+  --secondary: #8D8373;
+  --secondary-foreground: #F5F3EE;
   --muted: #C9B8A0;
   --muted-foreground: #D6C3A5;
-  --accent: #B45309;
-  --accent-foreground: #0A0604;
-  --border: rgba(180, 83, 9, 0.2);
-  --ring: rgba(180, 83, 9, 0.4);
+  --accent: #6A1B1A;
+  --accent-foreground: #F5F3EE;
+  --border: rgba(201, 162, 77, 0.2);
+  --ring: rgba(201, 162, 77, 0.4);
   --font-heading: var(--font-cinzel);
   --font-title: var(--font-geist-sans);
   --font-body: var(--font-geist-sans);
 }
 
 .varanasi-theme.dark {
-  --background: #0A0604;
-  --foreground: #F5E6C8;
+  --background: #0E0B07;
+  --foreground: #F5F3EE;
   --card: #15100C;
-  --card-foreground: #F5E6C8;
-  --primary: #B45309;
-  --primary-foreground: #0A0604;
-  --secondary: #8B5E3C;
+  --card-foreground: #F5F3EE;
+  --primary: #C9A24D;
+  --primary-foreground: #0E0B07;
+  --secondary: #8D8373;
   --muted: #C9B8A0;
-  --accent: #B45309;
-  --border: rgba(180, 83, 9, 0.2);
+  --accent: #6A1B1A;
+  --border: rgba(201, 162, 77, 0.2);
 }
 
 /* Varanasi Theme - Video Background */
@@ -334,35 +334,72 @@
 .varanasi-theme .hero-overlay {
   background: linear-gradient(
     to bottom,
-    rgba(10, 6, 4, 0.92),
-    rgba(10, 6, 4, 0.75),
-    rgba(10, 6, 4, 0.95)
+    rgba(14, 11, 7, 0.92),
+    rgba(14, 11, 7, 0.75),
+    rgba(14, 11, 7, 0.95)
   );
 }
 
 /* Varanasi Theme - Cards */
 .varanasi-theme .glass-card {
+  position: relative;
   background: linear-gradient(
     to top,
-    rgba(180, 83, 9, 0.25),
+    rgba(201, 162, 77, 0.15),
     rgba(20, 12, 8, 0.95)
   );
-  border: 1px solid rgba(180, 83, 9, 0.2);
+  border: 1px solid rgba(201, 162, 77, 0.2);
 }
 
 .varanasi-theme .glass-card:hover {
-  box-shadow: 0 0 24px rgba(180, 83, 9, 0.25);
+  box-shadow: 0 0 24px rgba(201, 162, 77, 0.25);
 }
 
-/* Varanasi Theme - Section Headers */
+/* Varanasi Theme - Gopuram Frame on Movie Cards (only cards with images) */
+/* Override overflow on all parent containers */
+.varanasi-theme .relative,
+.varanasi-theme a,
+.varanasi-theme .grid,
+.varanasi .relative,
+.varanasi a,
+.varanasi .grid {
+  overflow: visible !important;
+}
+
+/* Target all glass-cards in varanasi theme that are movie cards */
+.varanasi-theme .glass-card,
+.varanasi .glass-card {
+  overflow: visible !important; /* Allow Gopuram to extend beyond card */
+}
+
+
+/* Varanasi Theme - Section Headers with Trishul Underline */
+.varanasi-theme .section-title {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 18px; /* Space for trishul */
+}
+
 .varanasi-theme .section-title::before {
-  content: "॥ ";
-  opacity: 0.6;
+  content: ""; /* Remove text decoration */
 }
 
 .varanasi-theme .section-title::after {
-  content: " ॥";
-  opacity: 0.6;
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 14px;
+  background: url("/trishul.svg") no-repeat center;
+  background-size: contain;
+  background-color: transparent;
+  color: #C9A24D;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px rgba(201, 162, 77, 0.6));
+  transition: filter 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
 }
 
 /* Varanasi Theme - Typography */
@@ -390,11 +427,11 @@
 }
 
 .varanasi-theme-card-subtle {
-  border-color: rgba(180, 83, 9, 0.25) !important;
+  border-color: rgba(201, 162, 77, 0.25) !important;
 }
 
 .varanasi-theme-card-subtle:hover {
-  box-shadow: 0 0 20px rgba(180, 83, 9, 0.2);
+  box-shadow: 0 0 20px rgba(201, 162, 77, 0.2);
 }
 
 /* ============================================
@@ -541,20 +578,20 @@
 
 /* Varanasi Theme - Global Class */
 .varanasi {
-  --background: #0A0604;
-  --foreground: #F5E6C8;
+  --background: #0E0B07;
+  --foreground: #F5F3EE;
   --card: #15100C;
-  --card-foreground: #F5E6C8;
-  --primary: #B45309;
-  --primary-foreground: #0A0604;
-  --secondary: #8B5E3C;
-  --secondary-foreground: #F5E6C8;
+  --card-foreground: #F5F3EE;
+  --primary: #C9A24D;
+  --primary-foreground: #0E0B07;
+  --secondary: #8D8373;
+  --secondary-foreground: #F5F3EE;
   --muted: #C9B8A0;
   --muted-foreground: #D6C3A5;
-  --accent: #B45309;
-  --accent-foreground: #0A0604;
-  --border: rgba(180, 83, 9, 0.2);
-  --ring: rgba(180, 83, 9, 0.4);
+  --accent: #6A1B1A;
+  --accent-foreground: #F5F3EE;
+  --border: rgba(201, 162, 77, 0.2);
+  --ring: rgba(201, 162, 77, 0.4);
   --font-heading: var(--font-cinzel);
   --font-title: var(--font-geist-sans);
   --font-body: var(--font-geist-sans);
@@ -568,33 +605,72 @@
 .varanasi .hero-overlay {
   background: linear-gradient(
     to bottom,
-    rgba(10, 6, 4, 0.92),
-    rgba(10, 6, 4, 0.75),
-    rgba(10, 6, 4, 0.95)
+    rgba(14, 11, 7, 0.92),
+    rgba(14, 11, 7, 0.75),
+    rgba(14, 11, 7, 0.95)
   );
 }
 
 .varanasi .glass-card {
+  position: relative;
   background: linear-gradient(
     to top,
-    rgba(180, 83, 9, 0.25),
+    rgba(201, 162, 77, 0.15),
     rgba(20, 12, 8, 0.95)
   );
-  border: 1px solid rgba(180, 83, 9, 0.2);
+  border: 1px solid rgba(201, 162, 77, 0.2);
 }
 
 .varanasi .glass-card:hover {
-  box-shadow: 0 0 24px rgba(180, 83, 9, 0.25);
+  box-shadow: 0 0 24px rgba(201, 162, 77, 0.25);
+}
+
+/* Varanasi Theme - Gopuram Frame on Movie Cards (only cards with images) */
+/* Override overflow on all parent containers */
+.varanasi .relative,
+.varanasi a,
+.varanasi .grid {
+  overflow: visible !important;
+}
+
+/* Target all glass-cards in varanasi theme that are movie cards */
+.varanasi .glass-card {
+  overflow: visible !important; /* Allow Gopuram to extend beyond card */
+}
+
+.varanasi .glass-card:has(img):hover::before,
+.varanasi .glass-card:has(> div > img):hover::before {
+  opacity: 1;
+  filter: drop-shadow(0 0 8px rgba(201, 162, 77, 0.4));
+}
+
+/* Varanasi Theme - Section Headers with Trishul Underline */
+.varanasi .section-title {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 18px; /* Space for trishul */
 }
 
 .varanasi .section-title::before {
-  content: "॥ ";
-  opacity: 0.6;
+  content: ""; /* Remove text decoration */
 }
 
 .varanasi .section-title::after {
-  content: " ॥";
-  opacity: 0.6;
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 14px;
+  background: url("/trishul.svg") no-repeat center;
+  background-size: contain;
+  background-color: transparent;
+  color: #C9A24D;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px rgba(201, 162, 77, 0.6));
+  transition: filter 0.3s ease, opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .varanasi h1,
