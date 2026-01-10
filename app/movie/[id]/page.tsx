@@ -10,6 +10,7 @@ import WatchlistButton from '../../components/WatchlistButton';
 import MarkWatchedButton from '../../components/MarkWatchedButton';
 import RatingButton from '../../components/RatingButton';
 import ReviewsSection from '../../components/ReviewsSection';
+import ViewStockButton from '@/components/market/ViewStockButton';
 import { fetchImdbAwards } from '@/lib/movie-utils';
 import { getVideoConfigByTheme } from '@/lib/themes/theme-configs';
 import { cn } from '@/lib/utils';
@@ -446,6 +447,17 @@ export default function MovieDetail() {
                                 variant="outline"
                                 className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card"
                                 onSave={fetchUserRating}
+                            />
+                        </div>
+                    )}
+
+                    {/* View Stock Button */}
+                    {movie && (
+                        <div style={{ animationDelay: '375ms' }} className="animate-scale-in">
+                            <ViewStockButton
+                                movieId={movie.id}
+                                variant="outline"
+                                className="w-full h-11 md:h-12 text-base md:text-lg shadow-sm glass-card"
                             />
                         </div>
                     )}

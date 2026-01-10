@@ -914,4 +914,31 @@
   .hover-scale:active {
     transform: scale(0.95);
   }
+
+  /* Price flash animations */
+  @keyframes flash-green {
+    0%, 100% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: hsl(var(--primary) / 0.2);
+    }
+  }
+
+  @keyframes flash-red {
+    0%, 100% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: hsl(var(--destructive) / 0.2);
+    }
+  }
+
+  .animate-flash-green {
+    animation: flash-green 0.5s ease-in-out;
+  }
+
+  .animate-flash-red {
+    animation: flash-red 0.5s ease-in-out;
+  }
 }

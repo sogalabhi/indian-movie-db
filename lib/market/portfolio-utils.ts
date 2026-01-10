@@ -126,3 +126,24 @@ export function formatProfitLoss(
   };
 }
 
+/**
+ * Get user's coin balance
+ */
+export async function getUserCoins(userId: string): Promise<number> {
+  const { createServerClient } = await import('@/lib/supabase/server');
+  const supabase = createServerClient();
+  
+  const { data, error } = await supabase
+    .from('market_users')
+    .select('coins')
+    .eq('id', userId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching user coins:', error);
+    return 0;
+  }
+  
+  return data?.coins || 0;
+}
+

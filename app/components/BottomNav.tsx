@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Newspaper, BookmarkCheck, Scale, User, Eye } from 'lucide-react';
+import { Home, Newspaper, BookmarkCheck, Scale, User, Eye, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
+  { href: '/market', label: 'Market', icon: TrendingUp },
   { href: '/news', label: 'News', icon: Newspaper },
   { href: '/watchlist', label: 'Watchlist', icon: BookmarkCheck, requiresAuth: true },
   { href: '/watched', label: 'Watched', icon: Eye, requiresAuth: true },
