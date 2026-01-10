@@ -1299,4 +1299,3 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 - Social features (share portfolio, follow traders)
 - Market news integration
 - Advanced chart indicators (moving averages, etc.)
-- Portfolio analytics dashboard

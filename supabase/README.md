@@ -20,8 +20,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-### 3. Run SQL Migration
+### 3. Run SQL Migrations
 
+**Migration 1: Core Schema**
 1. Go to your Supabase project dashboard
 2. Navigate to SQL Editor
 3. Open `supabase/migrations/001_market_schema.sql`
@@ -34,6 +35,17 @@ This will create:
 - RPC functions (buy_stock, sell_stock, update_user_net_worth, get_chart_data)
 - Row Level Security (RLS) policies
 - Triggers for auto-updating timestamps and creating market users
+
+**Migration 2: Firebase Auth Compatible RPC Functions (Required if using Firebase Auth)**
+1. Open `supabase/migrations/002_market_rpc_with_user_id.sql`
+2. Copy and paste the entire SQL file
+3. Click "Run" to execute
+
+This creates alternative RPC functions that accept `user_id` as a parameter:
+- `buy_stock_with_user(user_id, movie_id, quantity)` - Works with Firebase Auth
+- `sell_stock_with_user(user_id, movie_id, quantity)` - Works with Firebase Auth
+
+**Note:** If you're using Supabase Auth, you can skip Migration 2 and use the original `buy_stock()` and `sell_stock()` functions from Migration 1.
 
 ### 4. Verify Setup
 
