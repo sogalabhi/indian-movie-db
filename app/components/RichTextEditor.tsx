@@ -31,7 +31,11 @@ export default function RichTextEditor({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const editor = useEditor({

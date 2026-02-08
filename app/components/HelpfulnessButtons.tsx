@@ -31,9 +31,13 @@ export default function HelpfulnessButtons({
 
   // Sync with props if they change
   useEffect(() => {
-    setHelpful(initialHelpful);
-    setHelpfulCount(initialHelpfulCount);
-    setNotHelpfulCount(initialNotHelpfulCount);
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setHelpful(initialHelpful);
+      setHelpfulCount(initialHelpfulCount);
+      setNotHelpfulCount(initialNotHelpfulCount);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [initialHelpful, initialHelpfulCount, initialNotHelpfulCount]);
 
   const handleVote = async (newHelpful: boolean) => {

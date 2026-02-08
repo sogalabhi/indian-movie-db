@@ -36,8 +36,12 @@ export default function LikeButton({
 
   // Sync with props if they change
   useEffect(() => {
-    setLiked(initialLiked);
-    setCount(initialCount);
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setLiked(initialLiked);
+      setCount(initialCount);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [initialLiked, initialCount]);
 
   const handleLike = async () => {

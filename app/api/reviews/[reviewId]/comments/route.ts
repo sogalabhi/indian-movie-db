@@ -50,7 +50,7 @@ export async function GET(
     const total = allSnapshot.size;
 
     // Map to comment objects
-    let allComments = allSnapshot.docs.map((doc) => {
+    const allComments = allSnapshot.docs.map((doc) => {
       const data = doc.data() as CommentData;
       return {
         id: doc.id,

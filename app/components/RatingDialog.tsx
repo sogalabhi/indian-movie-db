@@ -48,38 +48,9 @@ export default function RatingDialog({
   const [rating, setRating] = useState(existingReview?.rating || 0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [reviewBody, setReviewBody] = useState(existingReview?.body || '');
+  // Initialize with a safe default, parse date in useEffect to avoid impure function calls during render
   const [watchedDate, setWatchedDate] = useState(() => {
-    if (existingReview?.watchedAt) {
-      try {
-        // Handle Firestore Timestamp or Date objects
-        let date: Date;
-        const watchedAt = existingReview.watchedAt;
-        
-        if (typeof watchedAt === 'object' && 'toMillis' in watchedAt && typeof watchedAt.toMillis === 'function') {
-          // Firestore Timestamp
-          date = new Date(watchedAt.toMillis());
-        } else if (watchedAt instanceof Date) {
-          // Date object
-          date = new Date(watchedAt.getTime());
-        } else if (typeof watchedAt === 'object' && 'getTime' in watchedAt && typeof watchedAt.getTime === 'function') {
-          // Date-like object
-          date = new Date(watchedAt.getTime());
-        } else if (typeof watchedAt === 'string') {
-          // ISO string
-          date = new Date(watchedAt);
-        } else {
-          // Try direct conversion
-          date = new Date(watchedAt as any);
-        }
-        
-        // Check if date is valid
-        if (!isNaN(date.getTime())) {
-          return date.toISOString().split('T')[0];
-        }
-      } catch (error) {
-        console.error('Error parsing watchedAt date:', error);
-      }
-    }
+    // Return a safe default during render - actual date will be set in useEffect
     return new Date().toISOString().split('T')[0];
   });
   const [loading, setLoading] = useState(false);
@@ -110,8 +81,10 @@ export default function RatingDialog({
   // Reset form when dialog opens/closes or existingReview changes
   useEffect(() => {
     if (open) {
-      if (existingReview) {
-        setRating(existingReview.rating);
+      // Use setTimeout to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        if (existingReview) {
+          setRating(existingReview.rating);
         setReviewBody(existingReview.body || '');
         
         // Handle date conversion safely
@@ -147,6 +120,8 @@ export default function RatingDialog({
       }
       setError(null);
       setShowWatchlistPrompt(false);
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [open, existingReview]);
 

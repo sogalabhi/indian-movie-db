@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to avoid static generation issues with Supabase
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';

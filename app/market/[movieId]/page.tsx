@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering to avoid static generation issues with Supabase
+export const dynamic = 'force-dynamic';
+
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useStockPrice } from '@/hooks/useStockPrice';

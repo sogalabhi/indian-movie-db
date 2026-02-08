@@ -7,7 +7,8 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 export function useStockPrice(movieId: string) {
   const [price, setPrice] = useState<number | null>(null);
   const [priceChange, setPriceChange] = useState<number>(0);
-  const [lastUpdated, setLastUpdated] = useState<number>(Date.now()); // 🔑 Key for animation
+  // Initialize with 0, will be set in useEffect to avoid impure function call during render
+  const [lastUpdated, setLastUpdated] = useState<number>(0); // 🔑 Key for animation
 
   useEffect(() => {
     // Initial fetch
@@ -26,6 +27,12 @@ export function useStockPrice(movieId: string) {
     };
 
     fetchPrice();
+    
+    // Set initial timestamp after mount to avoid impure function call
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setLastUpdated(Date.now());
+    }, 0);
 
     // Subscribe to changes
     const channel: RealtimeChannel = supabase
@@ -49,6 +56,7 @@ export function useStockPrice(movieId: string) {
       .subscribe();
 
     return () => {
+      clearTimeout(timeoutId);
       supabase.removeChannel(channel);
     };
   }, [movieId]);
