@@ -317,8 +317,20 @@ export default function MovieDetail() {
                 {(!videoConfig?.youtube || videoError || !shouldLoadVideo) && movie.backdrop_path && (
                     <div
                         className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})` }}
-                    />
+                        style={{ 
+                            backgroundImage: `url(https://image.tmdb.org/t/p/original${movie.backdrop_path})`,
+                            opacity: 1
+                        }}
+                    >
+                        {/* Opacity gradient mask - fades image at bottom */}
+                        <div 
+                            className="absolute inset-0"
+                            style={{
+                                background: 'linear-gradient(to bottom, transparent 0%, transparent 50%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0.5) 85%, rgba(0,0,0,0.8) 100%)',
+                                pointerEvents: 'none'
+                            }}
+                        />
+                    </div>
                 )}
 
                 {/* Theme Overlay or Gradient Overlay */}
@@ -341,7 +353,7 @@ export default function MovieDetail() {
                 <div className="absolute bottom-6 md:bottom-10 left-4 md:left-6 lg:left-12 max-w-4xl animate-fade-in z-10">
                     <h1 className={cn(
                         "text-2xl md:text-4xl lg:text-6xl font-bold text-foreground drop-shadow-lg mb-3 md:mb-4",
-                        (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title"
+                        theme === 'retro-dark' && "section-title"
                     )}>{movie.title}</h1>
                     <div className="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm lg:text-lg font-medium text-muted-foreground items-center">
                         {/* OMDb Maturity Rating */}
@@ -522,29 +534,12 @@ export default function MovieDetail() {
                             <AlertDescription>Streaming Unavailable</AlertDescription>
                         </Alert>
                     )}
-                </div>
 
-                {/* Reviews Section */}
-                {movie && (
-                    <div className="md:col-span-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
-                        <ReviewsSection movieId={movie.id} movieTitle={movie.title} />
-                    </div>
-                )}
-
-                {/* Right Column: Detailed Info */}
-                <div className="md:col-span-2 space-y-6 md:space-y-10 pt-6 md:pt-10 lg:pt-20 animate-fade-in">
-
-                    {/* Plot */}
-                    <section className="animate-slide-up">
-                        <h3 className="text-xl md:text-2xl font-bold text-primary mb-3 md:mb-4 border-l-4 border-primary pl-3 md:pl-4">Plot Synopsis</h3>
-                        <p className="text-base md:text-lg text-muted-foreground leading-relaxed">{omdb?.Plot !== 'N/A' ? omdb?.Plot : movie.overview}</p>
-                    </section>
-
-                    {/* Cast & Crew */}
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
+                    {/* Director & Cast - Moved from right column */}
+                    <section className="grid grid-cols-1 gap-4 animate-slide-up" style={{ animationDelay: '450ms' }}>
                         <Card className="glass-card hover-scale">
                             <CardContent className="p-3 md:p-4">
-                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>
+                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", theme === 'retro-dark' && "section-title")}>
                                     <Clapperboard className="text-primary w-5 h-5" /> Director
                                 </h3>
                                 <p className="text-base md:text-lg">{omdb?.Director || 'N/A'}</p>
@@ -552,46 +547,55 @@ export default function MovieDetail() {
                             </CardContent>
                         </Card>
                         <Card className="glass-card hover-scale">
-                             <CardContent className="p-3 md:p-4">
-                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>
+                            <CardContent className="p-3 md:p-4">
+                                <h3 className={cn("text-lg md:text-xl font-bold mb-3 flex items-center gap-2", theme === 'retro-dark' && "section-title")}>
                                     <Users className="text-primary w-5 h-5" /> Cast
                                 </h3>
-                                <p className="text-base md:text-lg leading-relaxed">{omdb?.Actors || 'N/A'}</p>
+                                <p className="text-base md:text-lg leading-relaxed line-clamp-4">{omdb?.Actors || 'N/A'}</p>
                             </CardContent>
                         </Card>
                     </section>
 
-                    {/* Ratings Grid */}
-                    <section className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-                        <h3 className={cn("text-xl md:text-2xl font-bold mb-4 md:mb-6", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Critic Ratings</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                    {/* Critic Ratings - Moved from right column */}
+                    <section className="animate-slide-up" style={{ animationDelay: '500ms' }}>
+                        <h3 className={cn("text-lg md:text-xl font-bold mb-3 md:mb-4", theme === 'retro-dark' && "section-title")}>Critic Ratings</h3>
+                        <div className="grid grid-cols-3 gap-3">
                             {/* IMDb */}
                             <Card className="glass-card text-center hover-scale transition-smooth">
-                                <CardContent className="p-3 md:p-4">
-                                    <span className="block text-yellow-500 text-2xl md:text-3xl font-bold mb-1">{omdb?.imdbRating || 'N/A'}</span>
-                                    <span className="text-xs md:text-sm text-muted-foreground">IMDb Rating</span>
-                                    <span className="block text-[10px] md:text-xs text-muted-foreground mt-1">{omdb?.imdbVotes} votes</span>
+                                <CardContent className="p-3">
+                                    <span className="block text-yellow-500 text-xl md:text-2xl font-bold mb-1">{omdb?.imdbRating || 'N/A'}</span>
+                                    <span className="text-xs text-muted-foreground">IMDb</span>
                                 </CardContent>
                             </Card>
 
                             {/* Rotten Tomatoes */}
                             <Card className="glass-card text-center hover-scale transition-smooth">
-                                <CardContent className="p-3 md:p-4">
-                                    <span className="block text-destructive text-2xl md:text-3xl font-bold mb-1">
+                                <CardContent className="p-3">
+                                    <span className="block text-destructive text-xl md:text-2xl font-bold mb-1">
                                         {omdb?.Ratings?.find((r: any) => r.Source === 'Rotten Tomatoes')?.Value || 'N/A'}
                                     </span>
-                                    <span className="text-xs md:text-sm text-muted-foreground">Rotten Tomatoes</span>
+                                    <span className="text-xs text-muted-foreground">RT</span>
                                 </CardContent>
                             </Card>
 
                             {/* Metascore */}
-                            <Card className="glass-card text-center hover-scale transition-smooth col-span-2 md:col-span-1">
-                                <CardContent className="p-3 md:p-4">
-                                    <span className="block text-primary text-2xl md:text-3xl font-bold mb-1">{omdb?.Metascore !== 'N/A' ? omdb?.Metascore : '-'}</span>
-                                    <span className="text-xs md:text-sm text-muted-foreground">Metascore</span>
+                            <Card className="glass-card text-center hover-scale transition-smooth">
+                                <CardContent className="p-3">
+                                    <span className="block text-primary text-xl md:text-2xl font-bold mb-1">{omdb?.Metascore !== 'N/A' ? omdb?.Metascore : '-'}</span>
+                                    <span className="text-xs text-muted-foreground">Meta</span>
                                 </CardContent>
                             </Card>
                         </div>
+                    </section>
+                </div>
+
+                {/* Right Column: Detailed Info */}
+                <div className="md:col-span-2 space-y-6 md:space-y-10 animate-fade-in">
+
+                    {/* Plot */}
+                    <section className="animate-slide-up">
+                        <h3 className="text-xl md:text-2xl font-bold text-primary mb-3 md:mb-4 border-l-4 border-primary pl-3 md:pl-4">Plot Synopsis</h3>
+                        <p className="text-base md:text-lg text-muted-foreground leading-relaxed">{omdb?.Plot !== 'N/A' ? omdb?.Plot : movie.overview}</p>
                     </section>
 
                     {/* Awards Summary */}
@@ -605,7 +609,7 @@ export default function MovieDetail() {
                                 <Trophy className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                             </div>
                             <div>
-                                <h3 className={cn("text-xl md:text-2xl font-bold mb-2", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Awards & Recognition</h3>
+                                <h3 className={cn("text-xl md:text-2xl font-bold mb-2", theme === 'retro-dark' && "section-title")}>Awards & Recognition</h3>
                                 <p className="text-base md:text-xl text-muted-foreground font-medium">
                                     {omdb?.Awards !== 'N/A' ? omdb?.Awards : 'No awards recorded.'}
                                 </p>
@@ -617,7 +621,7 @@ export default function MovieDetail() {
                     <section className="animate-slide-up" style={{ animationDelay: '350ms' }}>
                         <div className="flex items-center gap-2 mb-4">
                             <Music className="text-primary w-5 h-5 md:w-6 md:h-6" />
-                            <h3 className={cn("text-xl md:text-2xl font-bold", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Movie Songs</h3>
+                            <h3 className={cn("text-xl md:text-2xl font-bold", theme === 'retro-dark' && "section-title")}>Movie Songs</h3>
                         </div>
 
                         {songsLoading ? (
@@ -761,7 +765,7 @@ export default function MovieDetail() {
                     <section className="animate-slide-up" style={{ animationDelay: '400ms' }}>
                         <div className="flex items-center gap-2 mb-4">
                             <Trophy className="text-primary w-5 h-5 md:w-6 md:h-6" />
-                            <h3 className={cn("text-xl md:text-2xl font-bold", (theme === 'toxic' || theme === 'rama' || theme === 'varanasi') && "section-title")}>Full Awards List</h3>
+                            <h3 className={cn("text-xl md:text-2xl font-bold", theme === 'retro-dark' && "section-title")}>Full Awards List</h3>
                         </div>
 
                         {detailedAwards.length > 0 ? (
@@ -806,6 +810,13 @@ export default function MovieDetail() {
                     </section>
 
                 </div>
+
+                {/* Reviews Section - After both columns */}
+                {movie && (
+                    <div className="md:col-span-3 animate-fade-in" style={{ animationDelay: '500ms' }}>
+                        <ReviewsSection movieId={movie.id} movieTitle={movie.title} />
+                    </div>
+                )}
             </div>
         </div>
     );

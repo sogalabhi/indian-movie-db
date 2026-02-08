@@ -33,7 +33,8 @@ export function CandlestickChart({ data, className }: CandlestickChartProps) {
     });
 
     // Create candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
+    // Type assertion needed for lightweight-charts v5 TypeScript definitions
+    const candlestickSeries = (chart as any).addCandlestickSeries({
       upColor: 'hsl(var(--primary))',
       downColor: 'hsl(var(--destructive))',
       borderVisible: false,
