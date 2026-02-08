@@ -1,6 +1,6 @@
 'use client';
 
-import { Moon, Sun, Film } from 'lucide-react';
+import { Moon, Sun, Gamepad2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -37,12 +37,8 @@ export function ThemeSelector() {
         return <Moon className="h-4 w-4" />;
       case 'light':
         return <Sun className="h-4 w-4" />;
-      case 'toxic':
-        return <Film className="h-4 w-4" />;
-      case 'rama':
-        return <Film className="h-4 w-4" />;
-      case 'varanasi':
-        return <Film className="h-4 w-4" />;
+      case 'retro-dark':
+        return <Gamepad2 className="h-4 w-4" />;
       default:
         return <Sun className="h-4 w-4" />;
     }
@@ -54,12 +50,8 @@ export function ThemeSelector() {
         return 'Dark';
       case 'light':
         return 'Light';
-      case 'toxic':
-        return 'TOXIC';
-      case 'rama':
-        return 'Ramayana';
-      case 'varanasi':
-        return 'Varanasi';
+      case 'retro-dark':
+        return 'Retro Dark';
       default:
         return 'Dark';
     }
@@ -88,22 +80,10 @@ export function ThemeSelector() {
             <span>Light</span>
           </div>
         </SelectItem>
-        <SelectItem value="toxic">
+        <SelectItem value="retro-dark">
           <div className="flex items-center gap-2">
-            <Film className="h-4 w-4" />
-            <span>TOXIC</span>
-          </div>
-        </SelectItem>
-        <SelectItem value="rama">
-          <div className="flex items-center gap-2">
-            <Film className="h-4 w-4" />
-            <span>Ramayana</span>
-          </div>
-        </SelectItem>
-        <SelectItem value="varanasi">
-          <div className="flex items-center gap-2">
-            <Film className="h-4 w-4" />
-            <span>Varanasi</span>
+            <Gamepad2 className="h-4 w-4" />
+            <span>Retro Dark</span>
           </div>
         </SelectItem>
       </SelectContent>

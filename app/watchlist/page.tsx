@@ -230,14 +230,6 @@ export default function WatchlistPage() {
                 >
                   <Link href={`/movie/${movie.id}`} className="block h-full">
                     <Card className="glass-card hover-scale cursor-pointer h-full flex flex-col relative">
-                      {theme === 'varanasi' && (
-                        <img 
-                          src="/gopuram.svg" 
-                          alt="" 
-                          className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
-                          style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))' }}
-                        />
-                      )}
                       <div className="relative">
                         <AspectRatio ratio={2 / 3} className="overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                           <img

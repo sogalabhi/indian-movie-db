@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User, BookmarkCheck, Award, Eye } from 'lucide-react';
+import { Search, Star, Film, Calendar, Newspaper, Scale, Check, AlertCircle, ChevronRight, LogIn, LogOut, User, BookmarkCheck, Award, Eye, Gamepad2 } from 'lucide-react';
 import { useComparison } from './contexts/ComparisonContext';
 import { useAuth } from './contexts/AuthContext';
 import WatchlistButton from './components/WatchlistButton';
@@ -40,7 +40,6 @@ export default function Home() {
   }, []);
   
   const videoConfig = getVideoConfigByTheme(theme || 'dark');
-  const isVaranasiTheme = mounted && (theme === 'varanasi' || theme === 'varanasi-theme');
 
   interface Movie {
     id: number;
@@ -413,8 +412,9 @@ export default function Home() {
         <div className="flex flex-row justify-between items-center gap-4">
           {/* Left: Logo and Desktop Navigation */}
           <div className="flex items-center gap-3 md:gap-6 flex-shrink-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2 whitespace-nowrap">
-              <Film className="w-6 h-6 md:w-8 md:h-8" /> ABCD
+            <h1 className="text-2xl md:text-3xl font-bold text-primary flex items-center gap-2 whitespace-nowrap logo-container">
+              <Gamepad2 className="w-6 h-6 md:w-8 md:h-8" /> 
+              <span className="retro-logo-text">ABCD</span>
             </h1>
 
             {/* Desktop Navigation */}
@@ -521,7 +521,7 @@ export default function Home() {
       {!debouncedQuery && (
         <div className="space-y-4 mb-12 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Top Filmmakers</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">Top Filmmakers</h2>
           </div>
           <CreatorsCarousel className="w-full" role="Director" carouselId="directors-carousel" />
         </div>
@@ -531,7 +531,7 @@ export default function Home() {
       {!debouncedQuery && (
         <div className="space-y-4 mb-12 animate-fade-in">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Top Actors</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">Top Actors</h2>
           </div>
           <CreatorsCarousel className="w-full" role="Actor" carouselId="actors-carousel" />
         </div>
@@ -542,7 +542,7 @@ export default function Home() {
         <div className="space-y-8 mb-12">
           {/* Language Filter Toggle for High-Rated Sections */}
           <div className="flex items-center justify-between animate-fade-in">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Highly Rated Movies</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">Highly Rated Movies</h2>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground hidden md:inline">Filter:</span>
               <Button
@@ -559,7 +559,7 @@ export default function Home() {
           {/* IMDb 8+ Section */}
           <div className="space-y-3 md:space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2 marquee-sign section-title">
                 <Star className="w-5 h-5 text-yellow-500 fill-current" />
                 IMDb 8+ Movies
               </h3>
@@ -611,21 +611,21 @@ export default function Home() {
                     >
                       <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
                         <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
-                          {isVaranasiTheme && (
-                            <img 
-                              src="/gopuram.svg" 
-                              alt="" 
-                              className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                              style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
-                            />
-                          )}
-                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
-                            <img
-                              src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                              alt={movie.title}
-                              className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                              style={{ objectFit: 'cover', objectPosition: 'center' }}
-                            />
+                          <div 
+                            className="relative w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]"
+                            style={{
+                              height: '280px',
+                              backgroundImage: movie.poster_path 
+                                ? `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` 
+                                : 'url(https://via.placeholder.com/500x750?text=No+Image)',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              transition: 'transform 0.3s ease-out'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          >
                             {/* IMDb Rating Badge */}
                             {(movie as any).imdbRating && (
                               <Badge className="absolute top-2 left-2 glass-card text-xs px-2 py-1 bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
@@ -697,7 +697,7 @@ export default function Home() {
           {/* Rotten Tomatoes 80%+ Section */}
           <div className="space-y-3 md:space-y-4 animate-fade-in">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2">
+              <h3 className="text-lg md:text-xl font-bold text-foreground flex items-center gap-2 marquee-sign section-title">
                 <Award className="w-5 h-5 text-red-500" />
                 Rotten Tomatoes 80%+ Movies
               </h3>
@@ -749,21 +749,21 @@ export default function Home() {
                     >
                       <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
                         <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
-                          {isVaranasiTheme && (
-                            <img 
-                              src="/gopuram.svg" 
-                              alt="" 
-                              className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                              style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
-                            />
-                          )}
-                          <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
-                            <img
-                              src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                              alt={movie.title}
-                              className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                              style={{ objectFit: 'cover', objectPosition: 'center' }}
-                            />
+                          <div 
+                            className="relative w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]"
+                            style={{
+                              height: '280px',
+                              backgroundImage: movie.poster_path 
+                                ? `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` 
+                                : 'url(https://via.placeholder.com/500x750?text=No+Image)',
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              transition: 'transform 0.3s ease-out'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                          >
                             {/* RT Rating Badge */}
                             {(movie as any).rtRating && (
                               <Badge className="absolute top-2 left-2 glass-card text-xs px-2 py-1 bg-red-500/20 text-red-500 border-red-500/30">
@@ -846,7 +846,7 @@ export default function Home() {
             return (
               <div key={genre.id} className="space-y-3 md:space-y-4 animate-fade-in">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground">{genre.name} Movies</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">{genre.name} Movies</h2>
                   {genreMoviesList.length > 0 && (
                     <Button variant="ghost" size="sm" asChild className="transition-smooth">
                       <Link href={`/genre/${genre.id}?name=${genre.name}`} className="flex items-center gap-1">
@@ -895,25 +895,25 @@ export default function Home() {
                         >
                           <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
                             <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
-                              {isVaranasiTheme && (
-                                <img 
-                                  src="/gopuram.svg" 
-                                  alt="" 
-                                  className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                  style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))', zIndex: 100 }}
-                                />
-                              )}
-                              <div className="relative h-[210px] md:h-[270px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
-                                <img
-                                  src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                                  alt={movie.title}
-                                  className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                                  style={{ objectFit: 'cover', objectPosition: 'center' }}
-                                />
+                              <div 
+                                className="relative w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]"
+                                style={{
+                                  height: '280px',
+                                  backgroundImage: movie.poster_path 
+                                    ? `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` 
+                                    : 'url(https://via.placeholder.com/500x750?text=No+Image)',
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                  backgroundRepeat: 'no-repeat',
+                                  transition: 'transform 0.3s ease-out'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                              >
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                  <Badge variant="secondary" className="text-xs px-3 py-1 glass-card">
+                                  <button className="view-details-btn bg-yellow-400 text-black font-bold py-2 px-4 rounded-full">
                                     View Details
-                                  </Badge>
+                                  </button>
                                 </div>
                               </div>
                               <CardContent className="p-3 md:p-4 flex-grow flex flex-col justify-end">
@@ -1001,7 +1001,7 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6" style={{ marginTop: isVaranasiTheme ? '70px' : '0', overflow: 'visible' }}>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6" style={{ overflow: 'visible' }}>
           {movies.length > 0 ? (
             movies.map((movie, index) => {
               const inComparison = isInComparison(movie.id);
@@ -1016,33 +1016,21 @@ export default function Home() {
                 >
                   <Link href={`/movie/${movie.id}`} className="block h-full" style={{ overflow: 'visible' }}>
                     <Card className="glass-card hover-scale cursor-pointer group h-full flex flex-col relative" style={{ overflow: 'visible' }}>
-                      {/* Gopuram SVG for Varanasi theme */}
-                      {isVaranasiTheme && (
-                        <div 
-                          className="absolute left-0 right-0 pointer-events-none"
-                          style={{ 
-                            top: '-60px',
-                            height: '60px',
-                            zIndex: 9999,
-                          }}
-                        >
-                          <img 
-                            src="/gopuram-simple.svg" 
-                            alt="Gopuram"
-                            className="w-full h-full"
-                            style={{ 
-                              filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.6))',
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div className="relative h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
-                        <img
-                          src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image'}
-                          alt={movie.title}
-                          className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
-                          style={{ objectFit: 'cover', objectPosition: 'center' }}
-                        />
+                      <div 
+                        className="relative w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]"
+                        style={{
+                          height: '280px',
+                          backgroundImage: movie.poster_path 
+                            ? `url(https://image.tmdb.org/t/p/w500${movie.poster_path})` 
+                            : 'url(https://via.placeholder.com/500x750?text=No+Image)',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat',
+                          transition: 'transform 0.3s ease-out'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      >
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <Badge variant="secondary" className="text-xs md:text-sm px-3 md:px-4 py-1 glass-card">
                             View Details

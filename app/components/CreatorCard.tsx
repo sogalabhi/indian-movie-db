@@ -44,12 +44,22 @@ export default function CreatorCard({
       onClick={handleClick}
     >
       <CardContent className="p-0">
-        <AspectRatio ratio={2 / 3} className="relative bg-muted overflow-hidden">
-          {imageUrl ? (
+        <div 
+          className="relative bg-muted overflow-hidden"
+          style={{
+            width: '100%',
+            height: '280px',
+            backgroundImage: imageUrl && !imageError ? `url(${imageUrl})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          {imageUrl && !imageError && (
             <img
               src={imageUrl}
               alt={creator.name}
-              className="w-full h-full object-cover"
+              className="hidden"
               onError={() => {
                 console.error(`❌ CreatorCard: Failed to load image for ${creator.name} - URL: ${imageUrl}`);
                 setImageError(true);
@@ -58,12 +68,13 @@ export default function CreatorCard({
                 console.log(`✅ CreatorCard: Image loaded successfully for ${creator.name}`);
               }}
             />
-          ) : (
+          )}
+          {(!imageUrl || imageError) && (
             <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
               <span className="text-4xl">🎬</span>
             </div>
           )}
-        </AspectRatio>
+        </div>
         <div className="p-3 md:p-4">
           <h3 className="font-semibold text-sm md:text-base mb-2 line-clamp-2">{creator.name}</h3>
           <div className="flex items-center justify-between gap-2">

@@ -494,14 +494,6 @@ export default function WatchedPage() {
                 >
                   <Link href={`/movie/${movie.id}`} className="block h-full">
                     <Card className="glass-card hover-scale cursor-pointer h-full flex flex-col relative">
-                      {theme === 'varanasi' && (
-                        <img 
-                          src="/gopuram.svg" 
-                          alt="" 
-                          className="absolute -top-20 left-1/2 -translate-x-1/2 w-full h-20 object-contain opacity-90 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
-                          style={{ filter: 'drop-shadow(0 0 8px rgba(201, 162, 77, 0.4))' }}
-                        />
-                      )}
                       <div className="relative">
                         <div className="h-[210px] md:h-[270px] lg:h-[300px] w-full overflow-hidden rounded-t-[calc(var(--radius)-2px)]">
                           <img
