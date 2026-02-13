@@ -1,27 +1,25 @@
-import { Timestamp } from 'firebase/firestore';
-
 /**
  * Creator interface representing a filmmaker/actor in the system
- * Document ID in Firestore: TMDB Person ID (e.g., "1261324")
+ * Stored in Supabase: TMDB Person ID (e.g., "1261324")
  */
 export interface Creator {
-  id: string; // TMDB Person ID (matches document ID)
+  id: string; // TMDB Person ID
   name: string;
   role: string; // "Director", "Actor", "Writer", etc.
   slug: string; // URL-friendly slug (e.g., "prashanth-neel")
   profilePath: string; // Cached TMDB profile image path (e.g., "/iyG7Re0d0lC8s5xX6c6o8.jpg")
   followersCount: number; // Community follower count (default: 0)
-  lastUpdated?: Timestamp | Date; // Last update timestamp
+  lastUpdated?: Date | string; // Last update timestamp
 }
 
 /**
  * CreatorFollower interface representing a follow relationship
- * Document ID in Firestore: `${userId}_${creatorId}` (composite key)
+ * Stored in Supabase: composite key (user_id, creator_id)
  */
 export interface CreatorFollower {
   userId: string;
   creatorId: string; // TMDB Person ID
-  followedAt: Timestamp | Date;
+  followedAt: Date | string;
 }
 
 /**

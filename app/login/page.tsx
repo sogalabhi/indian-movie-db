@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { firestoreClient } from '@/lib/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,27 +26,8 @@ export default function LoginPage() {
     }
   }, [user, authLoading, router]);
 
-  // Create or update profile when user logs in
-  useEffect(() => {
-    const createProfile = async () => {
-      if (firebaseUser && user) {
-        try {
-          const profile = await firestoreClient.getDoc('profiles', firebaseUser.uid);
-          if (!profile) {
-            await firestoreClient.setDoc('profiles', firebaseUser.uid, {
-              username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              avatarUrl: firebaseUser.photoURL || null,
-              email: firebaseUser.email || user.email || '',
-            });
-          }
-        } catch (err) {
-          console.error('Error creating/updating profile:', err);
-        }
-      }
-    };
-
-    createProfile();
-  }, [firebaseUser, user]);
+  // Profile creation is handled automatically by database trigger when user signs up
+  // No need to manually create profile on login
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

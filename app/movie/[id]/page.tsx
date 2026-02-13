@@ -363,12 +363,12 @@ export default function MovieDetail() {
                             </Badge>
                         )}
                         <Badge variant="destructive" className="text-xs">
-                            {movie.status}
+                            {movie.status ?? 'N/A'}
                         </Badge>
-                        <span>{movie.release_date.split('-')[0]}</span>
-                        <span>{movie.runtime} min</span>
+                        <span>{movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</span>
+                        <span>{movie.runtime != null ? `${movie.runtime} min` : 'N/A'}</span>
                         <span className="flex items-center gap-1 text-yellow-500 font-bold">
-                            <Star className="fill-current w-4 h-4 md:w-5 md:h-5" /> {omdb?.imdbRating || movie.vote_average.toFixed(1)}/10
+                            <Star className="fill-current w-4 h-4 md:w-5 md:h-5" /> {omdb?.imdbRating ?? (movie.vote_average != null ? movie.vote_average.toFixed(1) : 'N/A')}/10
                         </span>
                     </div>
                 </div>
@@ -379,11 +379,11 @@ export default function MovieDetail() {
 
                 {/* Left Column: Poster & Financials */}
                 <div className="md:col-span-1 space-y-4 md:space-y-8 animate-slide-up">
-                    <div className="rounded-xl overflow-hidden shadow-2xl border border-border glass-card">
+                        <div className="rounded-xl overflow-hidden shadow-2xl border border-border glass-card">
                         <AspectRatio ratio={2/3}>
                             <img
-                                src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`}
-                                alt={movie.title}
+                                src={movie.poster_path ? `https://image.tmdb.org/t/p/w780${movie.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Poster'}
+                                alt={movie.title ?? 'Movie'}
                                 className="w-full h-full object-cover transition-smooth"
                             />
                         </AspectRatio>

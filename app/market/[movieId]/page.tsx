@@ -53,6 +53,24 @@ export default function StockDetailPage() {
         if (stockError) throw stockError;
         setStock(stockData);
 
+        // Trigger lazy update if data is stale (don't wait for it)
+        // Check if last_updated is older than 1 hour
+        if (stockData.last_updated) {
+          const lastUpdated = new Date(stockData.last_updated);
+          const now = new Date();
+          const hoursSinceUpdate = (now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60);
+
+          if (hoursSinceUpdate >= 1) {
+            // Trigger update in background (fire and forget)
+            fetch(`/api/market/update-price/${movieId}`, {
+              method: 'POST',
+            }).catch((err) => {
+              console.error('Background price update failed:', err);
+              // Don't show error to user, just log it
+            });
+          }
+        }
+
         // Fetch user's portfolio for this stock
         if (user) {
           const { data: portfolioData } = await supabase

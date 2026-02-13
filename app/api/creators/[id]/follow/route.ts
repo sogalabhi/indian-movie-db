@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
-import { FieldValue } from 'firebase-admin/firestore';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/creators/[id]/follow
@@ -25,54 +24,79 @@ export async function POST(
     const { id: creatorId } = await params;
     console.log(`👤 POST /api/creators/${creatorId}/follow - User: ${user.uid}`);
 
-    if (!adminDb) {
-      console.error('❌ POST /api/creators/[id]/follow - Database not initialized');
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    const followerDocId = `${user.uid}_${creatorId}`;
-    const followerRef = adminDb.collection('creator_followers').doc(followerDocId);
-    const creatorRef = adminDb.collection('creators').doc(creatorId);
+    const supabase = createServerClient();
 
     // Check if already following
-    const followerDoc = await followerRef.get();
-    if (followerDoc.exists) {
+    const { data: existingFollow } = await supabase
+      .from('creator_follows')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('creator_id', creatorId)
+      .single();
+
+    if (existingFollow) {
       console.log(`⚠️ User ${user.uid} already following creator ${creatorId}`);
       // Get current count
-      const creatorDoc = await creatorRef.get();
-      const currentCount = creatorDoc.data()?.followersCount || 0;
+      const { data: creator } = await supabase
+        .from('creators')
+        .select('followers_count')
+        .eq('id', creatorId)
+        .single();
+
       return NextResponse.json({
         success: true,
         isFollowing: true,
-        followersCount: currentCount,
+        followersCount: creator?.followers_count || 0,
       });
     }
 
     console.log(`➕ Creating follow relationship...`);
 
-    // Use batch to ensure atomicity
-    const batch = adminDb.batch();
+    // Use transaction-like approach: insert follow and update count
+    // First, insert the follow relationship
+    const { error: insertError } = await supabase
+      .from('creator_follows')
+      .insert({
+        user_id: user.uid,
+        creator_id: creatorId,
+      });
 
-    // Create follow relationship
-    batch.set(followerRef, {
-      userId: user.uid,
-      creatorId: creatorId,
-      followedAt: FieldValue.serverTimestamp(),
-    });
+    if (insertError) {
+      // Check if it's a unique constraint violation (already exists)
+      if (insertError.code === '23505') {
+        const { data: creator } = await supabase
+          .from('creators')
+          .select('followers_count')
+          .eq('id', creatorId)
+          .single();
+
+        return NextResponse.json({
+          success: true,
+          isFollowing: true,
+          followersCount: creator?.followers_count || 0,
+        });
+      }
+      throw insertError;
+    }
 
     // Increment followers count
-    batch.update(creatorRef, {
-      followersCount: FieldValue.increment(1),
-    });
+    const { data: creator } = await supabase
+      .from('creators')
+      .select('followers_count')
+      .eq('id', creatorId)
+      .single();
 
-    await batch.commit();
+    const currentCount = creator?.followers_count || 0;
+    const { error: updateError } = await supabase
+      .from('creators')
+      .update({ followers_count: currentCount + 1 })
+      .eq('id', creatorId);
 
-    // Get updated count
-    const creatorDoc = await creatorRef.get();
-    const newCount = creatorDoc.data()?.followersCount || 0;
+    if (updateError) {
+      throw updateError;
+    }
+
+    const newCount = currentCount + 1;
 
     console.log(`✅ User ${user.uid} now following creator ${creatorId}`);
     console.log(`📊 Updated followers count: ${newCount}`);
@@ -113,59 +137,63 @@ export async function DELETE(
     const { id: creatorId } = await params;
     console.log(`👤 DELETE /api/creators/${creatorId}/follow - User: ${user.uid}`);
 
-    if (!adminDb) {
-      console.error('❌ DELETE /api/creators/[id]/follow - Database not initialized');
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    const followerDocId = `${user.uid}_${creatorId}`;
-    const followerRef = adminDb.collection('creator_followers').doc(followerDocId);
-    const creatorRef = adminDb.collection('creators').doc(creatorId);
+    const supabase = createServerClient();
 
     // Check if following
-    const followerDoc = await followerRef.get();
-    if (!followerDoc.exists) {
+    const { data: existingFollow } = await supabase
+      .from('creator_follows')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('creator_id', creatorId)
+      .single();
+
+    if (!existingFollow) {
       console.log(`⚠️ User ${user.uid} not following creator ${creatorId}`);
       // Get current count
-      const creatorDoc = await creatorRef.get();
-      const currentCount = creatorDoc.data()?.followersCount || 0;
+      const { data: creator } = await supabase
+        .from('creators')
+        .select('followers_count')
+        .eq('id', creatorId)
+        .single();
+
       return NextResponse.json({
         success: true,
         isFollowing: false,
-        followersCount: currentCount,
+        followersCount: creator?.followers_count || 0,
       });
     }
 
     console.log(`➖ Removing follow relationship...`);
 
-    // Use batch to ensure atomicity
-    const batch = adminDb.batch();
-
     // Delete follow relationship
-    batch.delete(followerRef);
+    const { error: deleteError } = await supabase
+      .from('creator_follows')
+      .delete()
+      .eq('user_id', user.uid)
+      .eq('creator_id', creatorId);
 
-    // Decrement followers count (but don't go below 0)
-    const creatorDoc = await creatorRef.get();
-    const currentCount = creatorDoc.data()?.followersCount || 0;
-    if (currentCount > 0) {
-      batch.update(creatorRef, {
-        followersCount: FieldValue.increment(-1),
-      });
-    } else {
-      // Ensure it doesn't go negative
-      batch.update(creatorRef, {
-        followersCount: 0,
-      });
+    if (deleteError) {
+      throw deleteError;
     }
 
-    await batch.commit();
+    // Decrement followers count (but don't go below 0)
+    const { data: creator } = await supabase
+      .from('creators')
+      .select('followers_count')
+      .eq('id', creatorId)
+      .single();
 
-    // Get updated count
-    const updatedCreatorDoc = await creatorRef.get();
-    const newCount = updatedCreatorDoc.data()?.followersCount || 0;
+    const currentCount = creator?.followers_count || 0;
+    const newCount = Math.max(0, currentCount - 1);
+
+    const { error: updateError } = await supabase
+      .from('creators')
+      .update({ followers_count: newCount })
+      .eq('id', creatorId);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     console.log(`✅ User ${user.uid} unfollowed creator ${creatorId}`);
     console.log(`📊 Updated followers count: ${newCount}`);
@@ -183,4 +211,3 @@ export async function DELETE(
     );
   }
 }
-

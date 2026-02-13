@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/reviews/[reviewId]/helpful
@@ -38,33 +38,35 @@ export async function POST(
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
 
-    const helpfulDocId = `${user.uid}_${reviewId}`;
-    const helpfulnessRef = adminDb.collection('reviewHelpfulness');
-    const helpfulDoc = await helpfulnessRef.doc(helpfulDocId).get();
-    const reviewRef = adminDb.collection('reviews').doc(reviewId);
-    const reviewDoc = await reviewRef.get();
+    // Check if review exists
+    const { data: review } = await supabase
+      .from('reviews')
+      .select('helpful_count, not_helpful_count')
+      .eq('id', reviewId)
+      .single();
 
-    if (!reviewDoc.exists) {
+    if (!review) {
       return NextResponse.json(
         { error: 'Review not found' },
         { status: 404 }
       );
     }
 
-    const reviewData = reviewDoc.data();
-    let helpfulCount = (reviewData?.helpfulCount as number) || 0;
-    let notHelpfulCount = (reviewData?.notHelpfulCount as number) || 0;
+    // Check existing vote
+    const { data: existingVote } = await supabase
+      .from('review_helpfulness')
+      .select('helpful')
+      .eq('user_id', user.uid)
+      .eq('review_id', reviewId)
+      .single();
 
-    if (helpfulDoc.exists) {
-      const existingData = helpfulDoc.data();
-      const previousHelpful = existingData?.helpful as boolean;
+    let helpfulCount = review.helpful_count || 0;
+    let notHelpfulCount = review.not_helpful_count || 0;
+
+    if (existingVote) {
+      const previousHelpful = existingVote.helpful;
 
       // If changing vote, adjust counts
       if (previousHelpful !== helpful) {
@@ -76,6 +78,17 @@ export async function POST(
           // Was not helpful, now helpful
           notHelpfulCount = Math.max(0, notHelpfulCount - 1);
           helpfulCount += 1;
+        }
+
+        // Update vote
+        const { error: updateError } = await supabase
+          .from('review_helpfulness')
+          .update({ helpful })
+          .eq('user_id', user.uid)
+          .eq('review_id', reviewId);
+
+        if (updateError) {
+          throw updateError;
         }
       } else {
         // Same vote, no change needed
@@ -92,21 +105,33 @@ export async function POST(
       } else {
         notHelpfulCount += 1;
       }
+
+      // Create vote
+      const { error: insertError } = await supabase
+        .from('review_helpfulness')
+        .insert({
+          user_id: user.uid,
+          review_id: reviewId,
+          helpful,
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
     }
 
-    // Update or create helpfulness document
-    await helpfulnessRef.doc(helpfulDocId).set({
-      userId: user.uid,
-      reviewId,
-      helpful,
-      createdAt: new Date(),
-    });
-
     // Update review counts
-    await reviewRef.update({
-      helpfulCount,
-      notHelpfulCount,
-    });
+    const { error: updateError } = await supabase
+      .from('reviews')
+      .update({
+        helpful_count: helpfulCount,
+        not_helpful_count: notHelpfulCount,
+      })
+      .eq('id', reviewId);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       helpful,
@@ -116,7 +141,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error voting helpful:', error);
     return NextResponse.json(
-      { error: 'Failed to vote helpful' },
+      { error: error.message || 'Failed to vote helpful' },
       { status: 500 }
     );
   }
@@ -149,40 +174,52 @@ export async function DELETE(
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
 
-    const helpfulDocId = `${user.uid}_${reviewId}`;
-    const helpfulnessRef = adminDb.collection('reviewHelpfulness');
-    const helpfulDoc = await helpfulnessRef.doc(helpfulDocId).get();
+    // Get existing vote
+    const { data: existingVote } = await supabase
+      .from('review_helpfulness')
+      .select('helpful')
+      .eq('user_id', user.uid)
+      .eq('review_id', reviewId)
+      .single();
 
-    if (!helpfulDoc.exists) {
+    if (!existingVote) {
       // No vote to remove, return current counts
-      const reviewRef = adminDb.collection('reviews').doc(reviewId);
-      const reviewDoc = await reviewRef.get();
-      const reviewData = reviewDoc.data();
+      const { data: review } = await supabase
+        .from('reviews')
+        .select('helpful_count, not_helpful_count')
+        .eq('id', reviewId)
+        .single();
+
       return NextResponse.json({
-        helpfulCount: (reviewData?.helpfulCount as number) || 0,
-        notHelpfulCount: (reviewData?.notHelpfulCount as number) || 0,
+        helpfulCount: review?.helpful_count || 0,
+        notHelpfulCount: review?.not_helpful_count || 0,
       });
     }
 
-    const existingData = helpfulDoc.data();
-    const wasHelpful = existingData?.helpful as boolean;
+    const wasHelpful = existingVote.helpful;
 
-    // Delete helpfulness document
-    await helpfulDoc.ref.delete();
+    // Delete vote
+    const { error: deleteError } = await supabase
+      .from('review_helpfulness')
+      .delete()
+      .eq('user_id', user.uid)
+      .eq('review_id', reviewId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     // Update review counts
-    const reviewRef = adminDb.collection('reviews').doc(reviewId);
-    const reviewDoc = await reviewRef.get();
-    const reviewData = reviewDoc.data();
-    let helpfulCount = (reviewData?.helpfulCount as number) || 0;
-    let notHelpfulCount = (reviewData?.notHelpfulCount as number) || 0;
+    const { data: review } = await supabase
+      .from('reviews')
+      .select('helpful_count, not_helpful_count')
+      .eq('id', reviewId)
+      .single();
+
+    let helpfulCount = review?.helpful_count || 0;
+    let notHelpfulCount = review?.not_helpful_count || 0;
 
     if (wasHelpful) {
       helpfulCount = Math.max(0, helpfulCount - 1);
@@ -190,10 +227,17 @@ export async function DELETE(
       notHelpfulCount = Math.max(0, notHelpfulCount - 1);
     }
 
-    await reviewRef.update({
-      helpfulCount,
-      notHelpfulCount,
-    });
+    const { error: updateError } = await supabase
+      .from('reviews')
+      .update({
+        helpful_count: helpfulCount,
+        not_helpful_count: notHelpfulCount,
+      })
+      .eq('id', reviewId);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       helpfulCount,
@@ -202,7 +246,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Error removing helpfulness vote:', error);
     return NextResponse.json(
-      { error: 'Failed to remove helpfulness vote' },
+      { error: error.message || 'Failed to remove helpfulness vote' },
       { status: 500 }
     );
   }
@@ -235,29 +279,25 @@ export async function GET(
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
 
-    const helpfulDocId = `${user.uid}_${reviewId}`;
-    const helpfulnessRef = adminDb.collection('reviewHelpfulness');
-    const helpfulDoc = await helpfulnessRef.doc(helpfulDocId).get();
+    const { data: vote } = await supabase
+      .from('review_helpfulness')
+      .select('helpful')
+      .eq('user_id', user.uid)
+      .eq('review_id', reviewId)
+      .single();
 
-    if (!helpfulDoc.exists) {
+    if (!vote) {
       return NextResponse.json({ helpful: null });
     }
 
-    const data = helpfulDoc.data();
-    return NextResponse.json({ helpful: data?.helpful as boolean });
+    return NextResponse.json({ helpful: vote.helpful });
   } catch (error: any) {
     console.error('Error checking helpfulness vote:', error);
     return NextResponse.json(
-      { error: 'Failed to check helpfulness vote' },
+      { error: error.message || 'Failed to check helpfulness vote' },
       { status: 500 }
     );
   }
 }
-

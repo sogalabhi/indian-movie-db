@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 
 // Lazy-load environment variables to allow dotenv to load them first
 function getSupabaseUrl(): string {
@@ -19,14 +20,11 @@ function getSupabaseAnonKey(): string {
 
 /**
  * Create a Supabase client for server-side operations
- * Note: For authenticated requests, you'll need to pass the user's access token
- * This will be enhanced when we implement Supabase Auth integration
+ * This client will be used in API routes and server components
+ * For authenticated requests, the session is handled via cookies
  */
 export const createServerClient = () => {
-  const supabaseUrl = getSupabaseUrl();
-  const supabaseAnonKey = getSupabaseAnonKey();
-  
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -35,6 +33,7 @@ export const createServerClient = () => {
 };
 
 // Server-side client with service role (for admin operations)
+// Note: This bypasses RLS and should only be used for admin operations
 export const createServiceClient = () => {
   const supabaseUrl = getSupabaseUrl();
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -50,4 +49,3 @@ export const createServiceClient = () => {
     },
   });
 };
-

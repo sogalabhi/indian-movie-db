@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/watchlist/[movieId]
@@ -17,17 +17,22 @@ export async function GET(
       return NextResponse.json({ inWatchlist: false });
     }
 
-    if (!adminDb) {
+    const { movieId } = await params;
+    const supabase = createServerClient();
+
+    const { data } = await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
+    
+    return NextResponse.json({ inWatchlist: !!data });
+  } catch (error: any) {
+    // If no row found, return false (not an error)
+    if (error.code === 'PGRST116') {
       return NextResponse.json({ inWatchlist: false });
     }
-
-    const { movieId } = await params;
-    const docId = `${user.uid}_${movieId}`;
-
-    const doc = await adminDb.collection('watchlists').doc(docId).get();
-    
-    return NextResponse.json({ inWatchlist: doc.exists });
-  } catch (error: any) {
     console.error('Error checking watchlist:', error);
     return NextResponse.json({ inWatchlist: false });
   }
@@ -51,42 +56,48 @@ export async function DELETE(
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
     const { movieId } = await params;
-    const docId = `${user.uid}_${movieId}`;
+    const supabase = createServerClient();
 
-    const docRef = adminDb.collection('watchlists').doc(docId);
-    const doc = await docRef.get();
+    // Check if exists
+    const { data: existing } = await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
     
-    if (!doc.exists) {
+    if (!existing) {
       return NextResponse.json(
         { error: 'Movie not in watchlist' },
         { status: 404 }
       );
     }
 
-    // Verify ownership
-    const data = doc.data();
-    if (data?.userId !== user.uid) {
+    // Verify ownership (RLS should handle this)
+    if (existing.user_id !== user.uid) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
       );
     }
 
-    await docRef.delete();
+    // Delete from watchlist
+    const { error: deleteError } = await supabase
+      .from('watchlists')
+      .delete()
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error removing from watchlist:', error);
     return NextResponse.json(
-      { error: 'Failed to remove from watchlist' },
+      { error: error.message || 'Failed to remove from watchlist' },
       { status: 500 }
     );
   }

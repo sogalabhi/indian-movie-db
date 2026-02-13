@@ -1,24 +1,18 @@
 import { NextResponse } from 'next/server';
-
-const AUTH_COOKIE_NAME = 'auth-token';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/logout
- * Clear authentication cookie
+ * Sign out from Supabase (client-side handles the actual logout)
  */
 export async function POST() {
   try {
-    const response = NextResponse.json({ success: true });
+    const supabase = createServerClient();
     
-    // Clear the auth cookie
-    response.cookies.set({
-      name: AUTH_COOKIE_NAME,
-      value: '',
-      maxAge: 0,
-      path: '/',
-    });
-
-    return response;
+    // Sign out from Supabase
+    await supabase.auth.signOut();
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Logout error:', error);
     return NextResponse.json(
@@ -27,4 +21,3 @@ export async function POST() {
     );
   }
 }
-

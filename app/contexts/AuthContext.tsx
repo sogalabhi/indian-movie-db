@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
-import { authClient } from '@/lib/firebase/client';
+import { supabase } from '@/lib/supabase/client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   uid: string;
@@ -14,7 +14,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  firebaseUser: FirebaseUser | null;
+  firebaseUser: SupabaseUser | null; // Keep for compatibility, but it's actually Supabase user now
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
@@ -26,38 +26,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   /**
-   * Sync Firebase auth state with server cookie
+   * Sync Supabase auth state with server
    */
-  const syncAuthWithServer = useCallback(async (firebaseUser: FirebaseUser | null) => {
+  const syncAuthWithServer = useCallback(async (supabaseUser: SupabaseUser | null) => {
     try {
-      if (firebaseUser) {
-        // Get ID token and send to server to set cookie
-        const idToken = await firebaseUser.getIdToken();
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ idToken }),
-        });
+      if (supabaseUser) {
+        // Get user profile from Supabase
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, email')
+          .eq('id', supabaseUser.id)
+          .single();
 
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-        } else {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('Failed to sync auth with server:', response.status, errorData);
-          setUser(null);
-        }
+        const userData: User = {
+          uid: supabaseUser.id,
+          email: supabaseUser.email || profile?.email || null,
+          displayName: profile?.username || supabaseUser.user_metadata?.username || null,
+          photoURL: profile?.avatar_url || supabaseUser.user_metadata?.avatar_url || null,
+          emailVerified: supabaseUser.email_confirmed_at !== null,
+        };
+
+        setUser(userData);
       } else {
-        // Clear cookie on server
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-        });
         setUser(null);
       }
     } catch (error) {
@@ -76,13 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         if (data.user) {
           setUser(data.user);
-          // If we have a server session but no Firebase user, try to get it
-          const currentFirebaseUser = authClient.getCurrentUser();
-          if (!currentFirebaseUser) {
-            // Server has session but client doesn't - this shouldn't happen normally
-            // but we'll handle it gracefully
-            console.warn('Server session exists but no Firebase user');
-          }
         } else {
           setUser(null);
         }
@@ -95,28 +82,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Listen to Firebase auth state changes
+   * Listen to Supabase auth state changes
    */
   useEffect(() => {
-    const unsubscribe = authClient.onAuthStateChanged(async (firebaseUser) => {
-      setFirebaseUser(firebaseUser);
-      
-      if (firebaseUser) {
-        // Sync with server when Firebase user is available
-        await syncAuthWithServer(firebaseUser);
-      } else {
-        // Clear user state when Firebase user is null
-        setUser(null);
-        await syncAuthWithServer(null);
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setFirebaseUser(session.user);
+        syncAuthWithServer(session.user);
       }
-      
+      setLoading(false);
+    });
+
+    // Listen to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setFirebaseUser(session.user);
+        await syncAuthWithServer(session.user);
+      } else {
+        setFirebaseUser(null);
+        setUser(null);
+      }
       setLoading(false);
     });
 
     // Also check server session on mount
     checkServerSession();
 
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [syncAuthWithServer, checkServerSession]);
 
   /**
@@ -125,14 +120,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
-      const { user: firebaseUser } = await authClient.signIn(email, password);
-      // Auth state listener will handle the rest
-      setFirebaseUser(firebaseUser);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        setFirebaseUser(data.user);
+        await syncAuthWithServer(data.user);
+      }
     } catch (error: any) {
       setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [syncAuthWithServer]);
 
   /**
    * Sign up with email and password
@@ -140,20 +145,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(async (email: string, password: string, username?: string) => {
     setLoading(true);
     try {
-      const { user: firebaseUser } = await authClient.signUp(email, password);
-      
-      // Update profile if username provided
-      if (username) {
-        await authClient.updateProfile(firebaseUser, { displayName: username });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username || email.split('@')[0],
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        setFirebaseUser(data.user);
+        await syncAuthWithServer(data.user);
+        
+        // Ensure user is initialized in profiles and market_users tables
+        // This is a fallback in case triggers don't fire
+        try {
+          await fetch('/api/auth/init-user', {
+            method: 'POST',
+          });
+        } catch (err) {
+          console.warn('Failed to initialize user:', err);
+          // Don't block signup if initialization fails
+        }
       }
-      
-      // Auth state listener will handle the rest
-      setFirebaseUser(firebaseUser);
     } catch (error: any) {
       setLoading(false);
       throw error;
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [syncAuthWithServer]);
 
   /**
    * Sign out
@@ -161,14 +186,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setLoading(true);
     try {
-      // Sign out from Firebase (this will trigger auth state listener)
-      await authClient.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      setUser(null);
+      setFirebaseUser(null);
+
       // Clear server session
       await fetch('/api/auth/logout', {
         method: 'POST',
       });
-      setUser(null);
-      setFirebaseUser(null);
     } catch (error: any) {
       console.error('Sign out error:', error);
       throw error;
@@ -215,4 +242,3 @@ export function useAuth() {
   }
   return context;
 }
-

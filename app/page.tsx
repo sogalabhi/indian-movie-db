@@ -480,8 +480,9 @@ export default function Home() {
 
         {/* Second Row: Language Filter and Search */}
         <div className="flex gap-3 md:gap-4 w-full">
-          {/* Language Filter */}
-          <Select value={language} onValueChange={setLanguage}>
+          {/* Language Filter - only render when mounted to avoid uncontrolled/controlled warning */}
+          {mounted && (
+          <Select value={language ?? 'kn'} onValueChange={setLanguage}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Select language" />
             </SelectTrigger>
@@ -493,6 +494,7 @@ export default function Home() {
               <SelectItem value="ml">Malayalam</SelectItem>
             </SelectContent>
           </Select>
+          )}
 
           {/* Search Bar */}
           <div className="relative w-full md:w-64">

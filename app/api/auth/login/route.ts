@@ -1,67 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyIdToken, createSessionCookie } from '@/lib/auth/server';
-
-const AUTH_COOKIE_NAME = 'auth-token';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * POST /api/auth/login
- * Exchange Firebase ID token for session cookie
+ * Supabase handles login client-side, this endpoint is for compatibility
+ * The actual login happens in AuthContext via supabase.auth.signInWithPassword
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { idToken } = body;
+    // Supabase handles login client-side, so this endpoint mainly verifies the session
+    const supabase = createServerClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (!idToken || typeof idToken !== 'string') {
+    if (error || !user) {
       return NextResponse.json(
-        { error: 'ID token is required' },
-        { status: 400 }
-      );
-    }
-
-    // Verify the ID token
-    const decodedToken = await verifyIdToken(idToken);
-    if (!decodedToken) {
-      return NextResponse.json(
-        { error: 'Invalid ID token' },
+        { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    // Create session cookie
-    const sessionCookie = await createSessionCookie(idToken);
-    if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Failed to create session' },
-        { status: 500 }
-      );
-    }
+    // Get profile data
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, avatar_url, email')
+      .eq('id', user.id)
+      .single();
 
-    // Create response with user data
-    const response = NextResponse.json({
+    return NextResponse.json({
       user: {
-        uid: decodedToken.uid,
-        email: decodedToken.email,
-        displayName: decodedToken.name,
-        photoURL: decodedToken.picture,
-        emailVerified: decodedToken.email_verified,
+        uid: user.id,
+        email: user.email || profile?.email || null,
+        displayName: profile?.username || user.user_metadata?.username || null,
+        photoURL: profile?.avatar_url || user.user_metadata?.avatar_url || null,
+        emailVerified: user.email_confirmed_at !== null,
       },
     });
-
-    // Set the session cookie using NextResponse
-    response.cookies.set({
-      name: AUTH_COOKIE_NAME,
-      value: sessionCookie,
-      maxAge: COOKIE_MAX_AGE,
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: IS_PRODUCTION,
-    });
-
-    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
@@ -70,4 +43,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

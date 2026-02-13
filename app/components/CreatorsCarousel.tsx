@@ -60,7 +60,7 @@ export default function CreatorsCarousel({ className = '', role, carouselId = 'c
     };
 
     fetchCreators();
-  }, []);
+  }, [role]);
 
   const handleFollow = (creatorId: string) => {
     setFollowingStates((prev) => ({

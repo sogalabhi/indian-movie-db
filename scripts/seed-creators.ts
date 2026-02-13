@@ -281,13 +281,20 @@ async function seedCreators() {
   }
   
   // Dynamically import Firebase Admin after env vars are loaded
-  const { adminDb: firestoreDb } = await import('../lib/firebase/server');
+  // Note: Firebase server module may not exist if using Supabase only
+  let firestoreDb: any = null;
+  try {
+    // Use require for dynamic import to avoid TypeScript errors if module doesn't exist
+    const firebaseModule = require('../lib/firebase/server');
+    firestoreDb = firebaseModule.adminDb;
+  } catch (error) {
+    console.warn('⚠️  Firebase server module not found. Skipping Firebase operations.');
+    console.warn('   If you need Firebase, create lib/firebase/server.ts');
+    // Continue without Firebase - this script may work with Supabase only
+  }
   
   if (!firestoreDb) {
-    console.error('❌ Firebase Admin DB is not initialized!');
-    console.error('   This should not happen if env vars are set correctly.');
-    console.error('   Please check your Firebase Admin SDK configuration.');
-    process.exit(1);
+    console.warn('⚠️  Firebase Admin DB is not available. Some operations may be skipped.');
   }
   
   console.log('✅ Environment variables loaded successfully');

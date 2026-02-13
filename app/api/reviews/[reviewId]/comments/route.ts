@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb, adminAuth } from '@/lib/firebase/server';
-
-interface CommentData {
-  userId: string;
-  reviewId: string;
-  parentId?: string;
-  body: string;
-  likesCount: number;
-  createdAt: any;
-  updatedAt: any;
-}
-
-interface UserProfile {
-  username?: string;
-  avatarUrl?: string | null;
-}
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/reviews/[reviewId]/comments
@@ -33,108 +18,62 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const sortBy = searchParams.get('sortBy') || 'most_helpful';
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    const commentsRef = adminDb.collection('reviewComments');
+    const supabase = createServerClient();
     
-    // Fetch all comments for this review
-    const allSnapshot = await commentsRef
-      .where('reviewId', '==', reviewId)
-      .get();
+    // Fetch comments for this review (using target_type='review' and target_id=reviewId)
+    // Note: We're treating review comments as comments with target_type='review'
+    // If you have a separate review_comments table, adjust accordingly
+    let query = supabase
+      .from('comments')
+      .select('*, profiles:user_id(username, avatar_url)')
+      .eq('target_type', 'review')
+      .eq('target_id', reviewId);
 
-    const total = allSnapshot.size;
-
-    // Map to comment objects
-    const allComments = allSnapshot.docs.map((doc) => {
-      const data = doc.data() as CommentData;
-      return {
-        id: doc.id,
-        ...data,
-      };
-    });
-
-    // Apply sorting in memory
+    // Apply sorting
     switch (sortBy) {
       case 'newest':
-        allComments.sort((a, b) => {
-          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || new Date(a.createdAt).getTime() || 0;
-          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || new Date(b.createdAt).getTime() || 0;
-          return bTime - aTime;
-        });
+        query = query.order('created_at', { ascending: false });
         break;
       case 'oldest':
-        allComments.sort((a, b) => {
-          const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || new Date(a.createdAt).getTime() || 0;
-          const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || new Date(b.createdAt).getTime() || 0;
-          return aTime - bTime;
-        });
+        query = query.order('created_at', { ascending: true });
         break;
       case 'most_liked':
-        allComments.sort((a, b) => b.likesCount - a.likesCount);
-        break;
       case 'most_helpful':
       default:
-        // Sort by likes count (most helpful = most liked for now)
-        allComments.sort((a, b) => b.likesCount - a.likesCount);
+        query = query.order('likes_count', { ascending: false });
         break;
     }
 
-    // Apply pagination in memory
+    const { data: comments, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const total = comments?.length || 0;
+
+    // Apply pagination
     const offset = (page - 1) * limit;
-    const comments = allComments.slice(offset, offset + limit);
+    const paginatedComments = (comments || []).slice(offset, offset + limit);
 
-    // Fetch user profiles for each comment
-    const commentsWithUsers = await Promise.all(
-      comments.map(async (comment) => {
-        let userProfile: UserProfile = {
-          username: 'User',
-          avatarUrl: null,
-        };
-
-        if (!adminDb) {
-          return {
-            ...comment,
-            user: userProfile,
-          };
-        }
-
-        try {
-          const profileDoc = await adminDb.collection('profiles').doc(comment.userId).get();
-          
-          if (profileDoc.exists) {
-            const profileData = profileDoc.data() as UserProfile;
-            userProfile = {
-              username: profileData.username || 'User',
-              avatarUrl: profileData.avatarUrl || null,
-            };
-          } else {
-            if (adminAuth) {
-              try {
-                const userRecord = await adminAuth.getUser(comment.userId);
-                userProfile = {
-                  username: userRecord.displayName || userRecord.email?.split('@')[0] || 'User',
-                  avatarUrl: userRecord.photoURL || null,
-                };
-              } catch (authError) {
-                console.warn(`User ${comment.userId} not found in Auth`);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`Error fetching profile for user ${comment.userId}:`, error);
-        }
-
-        return {
-          ...comment,
-          user: userProfile,
-        };
-      })
-    );
+    // Transform to camelCase and include user data
+    const commentsWithUsers = paginatedComments.map((comment: any) => {
+      const profile = comment.profiles || {};
+      return {
+        id: comment.id,
+        userId: comment.user_id,
+        reviewId: comment.target_id, // For compatibility
+        parentId: comment.parent_id,
+        body: comment.body,
+        likesCount: comment.likes_count || 0,
+        createdAt: comment.created_at,
+        updatedAt: comment.updated_at,
+        user: {
+          username: profile.username || 'User',
+          avatarUrl: profile.avatar_url || null,
+        },
+      };
+    });
 
     const totalPages = Math.ceil(total / limit);
 
@@ -148,7 +87,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Error fetching comments:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch comments' },
+      { error: error.message || 'Failed to fetch comments' },
       { status: 500 }
     );
   }
@@ -176,19 +115,12 @@ export async function POST(
     const body = await request.json();
     const { commentBody, parentId } = body;
 
-    // Normalize parentId - convert empty string/null/undefined to undefined, but keep valid strings
-    // Check if parentId was explicitly provided (even if empty string, it means it's a reply attempt)
+    // Normalize parentId
     const hasParentId = parentId !== undefined && parentId !== null;
     const normalizedParentId = hasParentId && typeof parentId === 'string' && parentId.trim() 
       ? parentId.trim() 
       : undefined;
 
-    // Debug logging (development only)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Comment creation - parentId received:', parentId, 'type:', typeof parentId, 'hasParentId:', hasParentId, 'normalized:', normalizedParentId);
-    }
-
-    // If parentId was provided but is invalid, return error
     if (hasParentId && !normalizedParentId) {
       return NextResponse.json(
         { error: 'Invalid parent comment ID' },
@@ -219,35 +151,17 @@ export async function POST(
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
 
     // Check rate limiting (max 10 comments per hour)
-    // Fetch all user comments and filter in memory to avoid composite index requirement
-    const commentsRef = adminDb.collection('reviewComments');
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-     
-    // Fetch all comments by user (no orderBy to avoid index requirement)
-    const allUserComments = await commentsRef
-      .where('userId', '==', user.uid)
-      .get();
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recentComments } = await supabase
+      .from('comments')
+      .select('created_at')
+      .eq('user_id', user.uid)
+      .gte('created_at', oneHourAgo);
 
-    // Filter in memory for comments created in the last hour
-    const recentComments = allUserComments.docs.filter((doc) => {
-      const commentData = doc.data();
-      const createdAt = commentData.createdAt?.toMillis?.() 
-        ? new Date(commentData.createdAt.toMillis())
-        : commentData.createdAt?.getTime?.()
-        ? new Date(commentData.createdAt.getTime())
-        : new Date(commentData.createdAt);
-      return createdAt >= oneHourAgo;
-    });
-
-    if (recentComments.length >= 10) {
+    if (recentComments && recentComments.length >= 10) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Maximum 10 comments per hour.' },
         { status: 429 }
@@ -255,10 +169,13 @@ export async function POST(
     }
 
     // Verify review exists
-    const reviewRef = adminDb.collection('reviews').doc(reviewId);
-    const reviewDoc = await reviewRef.get();
+    const { data: review } = await supabase
+      .from('reviews')
+      .select('id')
+      .eq('id', reviewId)
+      .single();
 
-    if (!reviewDoc.exists) {
+    if (!review) {
       return NextResponse.json(
         { error: 'Review not found' },
         { status: 404 }
@@ -267,8 +184,13 @@ export async function POST(
 
     // If parentId is provided, verify parent comment exists
     if (normalizedParentId) {
-      const parentDoc = await commentsRef.doc(normalizedParentId).get();
-      if (!parentDoc.exists) {
+      const { data: parentComment } = await supabase
+        .from('comments')
+        .select('id')
+        .eq('id', normalizedParentId)
+        .single();
+
+      if (!parentComment) {
         return NextResponse.json(
           { error: 'Parent comment not found' },
           { status: 404 }
@@ -276,75 +198,74 @@ export async function POST(
       }
     }
 
-    const now = new Date();
-
     // Create comment
-    const newComment: any = {
-      userId: user.uid,
-      reviewId,
+    const commentData: any = {
+      user_id: user.uid,
+      target_type: 'review',
+      target_id: reviewId,
       body: commentBody.trim(),
-      likesCount: 0,
-      createdAt: now,
-      updatedAt: now,
+      likes_count: 0,
     };
 
-    // Only include parentId if it's provided (Firestore doesn't allow undefined)
     if (normalizedParentId) {
-      newComment.parentId = normalizedParentId;
+      commentData.parent_id = normalizedParentId;
     }
 
-    const docRef = await commentsRef.add(newComment);
+    const { data: newComment, error: insertError } = await supabase
+      .from('comments')
+      .insert(commentData)
+      .select()
+      .single();
 
-    // Increment commentsCount on review
-    const reviewData = reviewDoc.data();
-    const currentCount = (reviewData?.commentsCount as number) || 0;
-    await reviewRef.update({
-      commentsCount: currentCount + 1,
-    });
+    if (insertError) {
+      throw insertError;
+    }
 
-    // Fetch user profile for response
-    let userProfile: UserProfile = {
-      username: 'User',
-      avatarUrl: null,
+    // Increment comments_count on review
+    const { data: reviewData } = await supabase
+      .from('reviews')
+      .select('comments_count')
+      .eq('id', reviewId)
+      .single();
+
+    const currentCount = reviewData?.comments_count || 0;
+    await supabase
+      .from('reviews')
+      .update({ comments_count: currentCount + 1 })
+      .eq('id', reviewId);
+
+    // Get user profile for response
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, avatar_url')
+      .eq('id', user.uid)
+      .single();
+
+    // Transform to camelCase
+    const transformed = {
+      id: newComment.id,
+      userId: newComment.user_id,
+      reviewId: newComment.target_id,
+      parentId: newComment.parent_id,
+      body: newComment.body,
+      likesCount: newComment.likes_count || 0,
+      createdAt: newComment.created_at,
+      updatedAt: newComment.updated_at,
+      user: {
+        username: profile?.username || 'User',
+        avatarUrl: profile?.avatar_url || null,
+      },
     };
-
-    try {
-      const profileDoc = await adminDb.collection('profiles').doc(user.uid).get();
-      if (profileDoc.exists) {
-        const profileData = profileDoc.data() as UserProfile;
-        userProfile = {
-          username: profileData.username || 'User',
-          avatarUrl: profileData.avatarUrl || null,
-        };
-      } else if (adminAuth) {
-        try {
-          const userRecord = await adminAuth.getUser(user.uid);
-          userProfile = {
-            username: userRecord.displayName || userRecord.email?.split('@')[0] || 'User',
-            avatarUrl: userRecord.photoURL || null,
-          };
-        } catch (authError) {
-          // Use default
-        }
-      }
-    } catch (error) {
-      // Use default
-    }
 
     return NextResponse.json({
       success: true,
-      comment: {
-        id: docRef.id,
-        ...newComment,
-        user: userProfile,
-      },
+      comment: transformed,
     });
   } catch (error: any) {
     console.error('Error creating comment:', error);
     return NextResponse.json(
-      { error: 'Failed to create comment' },
+      { error: error.message || 'Failed to create comment' },
       { status: 500 }
     );
   }
 }
-

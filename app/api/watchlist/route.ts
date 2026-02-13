@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
-import { getAuthCookie } from '@/lib/auth/cookies';
-
-interface WatchlistItemData {
-  userId: string;
-  movieId: string;
-  createdAt: any; // Firestore Timestamp or Date
-}
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/watchlist
@@ -24,41 +17,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get watchlist items for this user
-    // Note: We fetch without orderBy to avoid requiring a composite index,
-    // then sort in memory instead
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
+    const supabase = createServerClient();
+
+    const { data: watchlist, error } = await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', user.uid)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
     }
 
-    const watchlistRef = adminDb.collection('watchlists');
-    const snapshot = await watchlistRef
-      .where('userId', '==', user.uid)
-      .get();
+    // Transform to camelCase
+    const transformed = (watchlist || []).map((item: any) => ({
+      id: `${item.user_id}_${item.movie_id}`, // For compatibility
+      userId: item.user_id,
+      movieId: item.movie_id,
+      createdAt: item.created_at,
+    }));
 
-    const watchlist = snapshot.docs
-      .map((doc) => {
-        const data = doc.data() as WatchlistItemData;
-        return {
-          id: doc.id,
-          ...data,
-        };
-      })
-      .sort((a, b) => {
-        // Sort by createdAt descending (newest first)
-        const aTime = a.createdAt?.toMillis?.() || a.createdAt?.getTime?.() || 0;
-        const bTime = b.createdAt?.toMillis?.() || b.createdAt?.getTime?.() || 0;
-        return bTime - aTime;
-      });
-
-    return NextResponse.json({ watchlist });
+    return NextResponse.json({ watchlist: transformed });
   } catch (error: any) {
     console.error('Error fetching watchlist:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch watchlist' },
+      { error: error.message || 'Failed to fetch watchlist' },
       { status: 500 }
     );
   }
@@ -89,45 +72,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    // Create composite document ID
-    const docId = `${user.uid}_${movieId}`;
+    const supabase = createServerClient();
 
     // Check if already in watchlist
-    const existingDoc = await adminDb.collection('watchlists').doc(docId).get();
+    const { data: existing } = await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', String(movieId))
+      .single();
     
-    if (existingDoc.exists) {
+    if (existing) {
       return NextResponse.json(
         { error: 'Movie already in watchlist' },
         { status: 400 }
       );
     }
 
-    // Add to watchlist
-    await adminDb.collection('watchlists').doc(docId).set({
-      userId: user.uid,
-      movieId: String(movieId),
-      createdAt: new Date(),
-    });
+    // Add to watchlist (using INSERT with ON CONFLICT for safety)
+    const { data: watchlistItem, error: insertError } = await supabase
+      .from('watchlists')
+      .insert({
+        user_id: user.uid,
+        movie_id: String(movieId),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      // Check if it's a unique constraint violation (already exists)
+      if (insertError.code === '23505') {
+        return NextResponse.json(
+          { error: 'Movie already in watchlist' },
+          { status: 400 }
+        );
+      }
+      throw insertError;
+    }
 
     return NextResponse.json({ 
       success: true,
       watchlistItem: {
-        id: docId,
-        userId: user.uid,
-        movieId: String(movieId),
+        id: `${watchlistItem.user_id}_${watchlistItem.movie_id}`,
+        userId: watchlistItem.user_id,
+        movieId: watchlistItem.movie_id,
       }
     });
   } catch (error: any) {
     console.error('Error adding to watchlist:', error);
     return NextResponse.json(
-      { error: 'Failed to add to watchlist' },
+      { error: error.message || 'Failed to add to watchlist' },
       { status: 500 }
     );
   }
@@ -158,30 +152,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    // Create composite document ID
-    const docId = `${user.uid}_${movieId}`;
+    const supabase = createServerClient();
 
     // Check if exists
-    const docRef = adminDb.collection('watchlists').doc(docId);
-    const doc = await docRef.get();
+    const { data: existing } = await supabase
+      .from('watchlists')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
     
-    if (!doc.exists) {
+    if (!existing) {
       return NextResponse.json(
         { error: 'Movie not in watchlist' },
         { status: 404 }
       );
     }
 
-    // Verify ownership
-    const data = doc.data();
-    if (data?.userId !== user.uid) {
+    // Verify ownership (RLS should handle this, but double-check)
+    if (existing.user_id !== user.uid) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -189,13 +178,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete from watchlist
-    await docRef.delete();
+    const { error: deleteError } = await supabase
+      .from('watchlists')
+      .delete()
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error removing from watchlist:', error);
     return NextResponse.json(
-      { error: 'Failed to remove from watchlist' },
+      { error: error.message || 'Failed to remove from watchlist' },
       { status: 500 }
     );
   }

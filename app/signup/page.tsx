@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { firestoreClient } from '@/lib/firebase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,72 +27,8 @@ export default function SignupPage() {
     }
   }, [user, authLoading, router]);
 
-  // Create profile in Firestore when user signs up
-  useEffect(() => {
-    const createProfile = async () => {
-      // Only need firebaseUser for Firestore write (user from context is optional)
-      if (!firebaseUser) {
-        return;
-      }
-
-      try {
-        console.log('🔍 Checking profile for user:', firebaseUser.uid);
-        
-        // Check if profile already exists
-        const existingProfile = await firestoreClient.getDoc('profiles', firebaseUser.uid);
-        
-        if (!existingProfile) {
-          // Create new profile
-          const profileData = {
-            username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-            avatarUrl: firebaseUser.photoURL || null,
-            email: firebaseUser.email || '',
-          };
-          
-          console.log('📝 Creating profile with data:', profileData);
-          
-          // Use setDoc to create the profile (merge: true will create if doesn't exist)
-          await firestoreClient.setDoc('profiles', firebaseUser.uid, profileData);
-          
-          console.log('✅ Profile created successfully in Firestore!');
-          console.log('   UID:', firebaseUser.uid);
-          console.log('   Username:', profileData.username);
-          console.log('   Email:', profileData.email);
-        } else {
-          console.log('ℹ️ Profile already exists for user:', firebaseUser.uid);
-        }
-      } catch (err: any) {
-        console.error('❌ Error creating profile in Firestore:', err);
-        console.error('   Error code:', err?.code);
-        console.error('   Error message:', err?.message);
-        console.error('   User UID:', firebaseUser.uid);
-        
-        // Check for common Firestore errors
-        if (err?.code === 'permission-denied') {
-          console.error('');
-          console.error('⚠️ PERMISSION DENIED!');
-          console.error('   Your Firestore security rules are blocking the write.');
-          console.error('   Go to Firebase Console → Firestore Database → Rules');
-          console.error('   Make sure you have:');
-          console.error('   match /profiles/{userId} {');
-          console.error('     allow write: if request.auth != null && request.auth.uid == userId;');
-          console.error('   }');
-          console.error('');
-        } else if (err?.code === 'unavailable') {
-          console.error('⚠️ Firestore is unavailable. Check your internet connection.');
-        } else if (err?.code === 'failed-precondition') {
-          console.error('⚠️ Firestore operation failed. The database might not be initialized.');
-        }
-      }
-    };
-
-    // Small delay to ensure auth state is fully propagated
-    const timer = setTimeout(() => {
-      createProfile();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [firebaseUser]);
+  // Profile creation is handled automatically by database trigger when user signs up
+  // The trigger in Supabase creates a profile entry in the profiles table
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,12 +36,8 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      // Create user account (AuthContext handles cookie sync)
+      // Create user account (AuthContext handles session, database trigger creates profile)
       await signUp(email, password, username);
-
-      // Wait a moment for the auth state to update and profile to be created
-      // The useEffect above will handle profile creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Redirect to home
       router.push('/');

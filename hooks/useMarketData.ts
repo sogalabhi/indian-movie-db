@@ -69,26 +69,9 @@ export function useMarketData() {
 
     fetchStocks();
 
-    // Subscribe to price updates
-    const channel = supabase
-      .channel('market_stocks_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'movie_stocks',
-        },
-        () => {
-          // Refetch on price updates
-          fetchStocks();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Note: Real-time subscription removed to reduce Supabase quota usage
+    // Market page now relies on ISR (Incremental Static Regeneration) for updates
+    // Users will see fresh data on page load/refresh (60s revalidation)
   }, [searchQuery, sortBy, filterStatus]);
 
   return {

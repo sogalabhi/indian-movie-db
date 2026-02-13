@@ -61,7 +61,7 @@ export async function getUserPortfolioWithStocks(userId: string) {
 export async function calculatePortfolioValue(userId: string): Promise<number> {
   const portfolios = await getUserPortfolioWithStocks(userId);
   
-  return portfolios.reduce((total, portfolio) => {
+  return portfolios.reduce((total: number, portfolio: Portfolio & { movie_stocks: MovieStock | null }) => {
     const stock = portfolio.movie_stocks as MovieStock;
     if (stock && stock.current_price) {
       return total + (portfolio.quantity * stock.current_price);

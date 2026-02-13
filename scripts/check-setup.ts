@@ -136,7 +136,7 @@ async function checkSetup() {
         console.log(`   ✅ Found ${count} movie stock(s)`);
         if (data && data.length > 0) {
           console.log('   Sample stocks:');
-          data.slice(0, 3).forEach((stock) => {
+          data.slice(0, 3).forEach((stock: { title: string; status: string }) => {
             console.log(`      - ${stock.title} (${stock.status})`);
           });
         }

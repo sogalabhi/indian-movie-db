@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
-
-interface ReviewData {
-  userId: string;
-  movieId: string;
-  rating: number; // 1-10 (required)
-  body?: string; // Optional review text
-  watchedAt: any; // Firestore Timestamp or Date
-  likesCount: number; // Denormalized (default: 0)
-  helpfulCount: number; // New: count of helpful votes (default: 0)
-  notHelpfulCount: number; // New: count of not helpful votes (default: 0)
-  commentsCount: number; // New: denormalized comment count (default: 0)
-  createdAt: any; // Firestore Timestamp or Date
-  updatedAt: any; // Firestore Timestamp or Date
-}
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/reviews
@@ -34,39 +20,41 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const movieId = searchParams.get('movieId');
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    const reviewsRef = adminDb.collection('reviews');
-    let query = reviewsRef.where('userId', '==', user.uid);
+    const supabase = createServerClient();
+    
+    let query = supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', user.uid);
 
     // Filter by movieId if provided
     if (movieId) {
-      query = query.where('movieId', '==', String(movieId));
+      query = query.eq('movie_id', String(movieId));
     }
 
-    const snapshot = await query.get();
+    const { data: reviews, error } = await query.order('watched_at', { ascending: false });
 
-    const reviews = snapshot.docs
-      .map((doc) => {
-        const data = doc.data() as ReviewData;
-        return {
-          id: doc.id,
-          ...data,
-        };
-      })
-      .sort((a, b) => {
-        // Sort by watchedAt descending (newest first)
-        const aTime = a.watchedAt?.toMillis?.() || a.watchedAt?.getTime?.() || 0;
-        const bTime = b.watchedAt?.toMillis?.() || b.watchedAt?.getTime?.() || 0;
-        return bTime - aTime;
-      });
+    if (error) {
+      throw error;
+    }
 
-    return NextResponse.json({ reviews });
+    // Transform snake_case to camelCase for frontend compatibility
+    const transformedReviews = (reviews || []).map((review: any) => ({
+      id: review.id,
+      userId: review.user_id,
+      movieId: review.movie_id,
+      rating: review.rating,
+      body: review.body,
+      watchedAt: review.watched_at,
+      likesCount: review.likes_count || 0,
+      helpfulCount: review.helpful_count || 0,
+      notHelpfulCount: review.not_helpful_count || 0,
+      commentsCount: review.comments_count || 0,
+      createdAt: review.created_at,
+      updatedAt: review.updated_at,
+    }));
+
+    return NextResponse.json({ reviews: transformedReviews });
   } catch (error: any) {
     console.error('Error fetching reviews:', error);
     return NextResponse.json(
@@ -116,77 +104,104 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
+    const now = new Date().toISOString();
+    const watchedDate = watchedAt ? new Date(watchedAt).toISOString() : now;
 
     // Check if review already exists (one review per user per movie)
-    const reviewsRef = adminDb.collection('reviews');
-    const existingQuery = await reviewsRef
-      .where('userId', '==', user.uid)
-      .where('movieId', '==', String(movieId))
-      .get();
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', String(movieId))
+      .single();
 
-    const now = new Date();
-    const watchedDate = watchedAt ? new Date(watchedAt) : now;
+    if (existingReview) {
+      // Update existing review
+      const { data: updatedReview, error: updateError } = await supabase
+        .from('reviews')
+        .update({
+          rating,
+          body: reviewBody !== undefined ? reviewBody : existingReview.body,
+          watched_at: watchedDate,
+          updated_at: now,
+        })
+        .eq('id', existingReview.id)
+        .select()
+        .single();
 
-    if (existingQuery.empty) {
-      // Create new review
-      const newReview: ReviewData = {
-        userId: user.uid,
-        movieId: String(movieId),
-        rating,
-        body: reviewBody || '',
-        watchedAt: watchedDate,
-        likesCount: 0,
-        helpfulCount: 0,
-        notHelpfulCount: 0,
-        commentsCount: 0,
-        createdAt: now,
-        updatedAt: now,
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Transform to camelCase
+      const transformed = {
+        id: updatedReview.id,
+        userId: updatedReview.user_id,
+        movieId: updatedReview.movie_id,
+        rating: updatedReview.rating,
+        body: updatedReview.body,
+        watchedAt: updatedReview.watched_at,
+        likesCount: updatedReview.likes_count || 0,
+        helpfulCount: updatedReview.helpful_count || 0,
+        notHelpfulCount: updatedReview.not_helpful_count || 0,
+        commentsCount: updatedReview.comments_count || 0,
+        createdAt: updatedReview.created_at,
+        updatedAt: updatedReview.updated_at,
       };
 
-      const docRef = await reviewsRef.add(newReview);
-      
       return NextResponse.json({
         success: true,
-        review: {
-          id: docRef.id,
-          ...newReview,
-        },
+        review: transformed,
       });
     } else {
-      // Update existing review
-      const existingDoc = existingQuery.docs[0];
-      const existingData = existingDoc.data() as ReviewData;
+      // Create new review
+      const { data: newReview, error: insertError } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: user.uid,
+          movie_id: String(movieId),
+          rating,
+          body: reviewBody || '',
+          watched_at: watchedDate,
+          likes_count: 0,
+          helpful_count: 0,
+          not_helpful_count: 0,
+          comments_count: 0,
+        })
+        .select()
+        .single();
 
-      const updatedReview: Partial<ReviewData> = {
-        rating,
-        body: reviewBody !== undefined ? reviewBody : existingData.body,
-        watchedAt: watchedDate,
-        updatedAt: now,
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Transform to camelCase
+      const transformed = {
+        id: newReview.id,
+        userId: newReview.user_id,
+        movieId: newReview.movie_id,
+        rating: newReview.rating,
+        body: newReview.body,
+        watchedAt: newReview.watched_at,
+        likesCount: newReview.likes_count || 0,
+        helpfulCount: newReview.helpful_count || 0,
+        notHelpfulCount: newReview.not_helpful_count || 0,
+        commentsCount: newReview.comments_count || 0,
+        createdAt: newReview.created_at,
+        updatedAt: newReview.updated_at,
       };
-
-      await existingDoc.ref.update(updatedReview);
 
       return NextResponse.json({
         success: true,
-        review: {
-          id: existingDoc.id,
-          ...existingData,
-          ...updatedReview,
-        },
+        review: transformed,
       });
     }
   } catch (error: any) {
     console.error('Error creating/updating review:', error);
     return NextResponse.json(
-      { error: 'Failed to save review' },
+      { error: error.message || 'Failed to save review' },
       { status: 500 }
     );
   }
 }
-

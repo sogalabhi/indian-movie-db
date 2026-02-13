@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUserFromRequest } from '@/lib/auth/server';
-import { adminDb } from '@/lib/firebase/server';
-
-interface ReviewData {
-  userId: string;
-  movieId: string;
-  rating: number;
-  body?: string;
-  watchedAt: any;
-  likesCount: number;
-  createdAt: any;
-  updatedAt: any;
-}
+import { createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/reviews/user/[movieId]
@@ -29,29 +18,34 @@ export async function GET(
     }
 
     const { movieId } = await params;
+    const supabase = createServerClient();
 
-    if (!adminDb) {
+    const { data: review, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
+
+    if (error || !review) {
       return NextResponse.json({ review: null });
     }
 
-    const reviewsRef = adminDb.collection('reviews');
-    const snapshot = await reviewsRef
-      .where('userId', '==', user.uid)
-      .where('movieId', '==', movieId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return NextResponse.json({ review: null });
-    }
-
-    const doc = snapshot.docs[0];
-    const data = doc.data() as ReviewData;
-
+    // Transform to camelCase
     return NextResponse.json({
       review: {
-        id: doc.id,
-        ...data,
+        id: review.id,
+        userId: review.user_id,
+        movieId: review.movie_id,
+        rating: review.rating,
+        body: review.body,
+        watchedAt: review.watched_at,
+        likesCount: review.likes_count || 0,
+        helpfulCount: review.helpful_count || 0,
+        notHelpfulCount: review.not_helpful_count || 0,
+        commentsCount: review.comments_count || 0,
+        createdAt: review.created_at,
+        updatedAt: review.updated_at,
       },
     });
   } catch (error: any) {
@@ -82,31 +76,6 @@ export async function PUT(
     const body = await request.json();
     const { rating, body: reviewBody, watchedAt } = body;
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
-
-    // Find existing review
-    const reviewsRef = adminDb.collection('reviews');
-    const snapshot = await reviewsRef
-      .where('userId', '==', user.uid)
-      .where('movieId', '==', movieId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return NextResponse.json(
-        { error: 'Review not found' },
-        { status: 404 }
-      );
-    }
-
-    const doc = snapshot.docs[0];
-    const existingData = doc.data() as ReviewData;
-
     // Validate rating if provided
     if (rating !== undefined) {
       if (typeof rating !== 'number' || rating < 1 || rating > 10) {
@@ -117,9 +86,26 @@ export async function PUT(
       }
     }
 
+    const supabase = createServerClient();
+
+    // Find existing review
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
+
+    if (!existingReview) {
+      return NextResponse.json(
+        { error: 'Review not found' },
+        { status: 404 }
+      );
+    }
+
     // Build update object
-    const updateData: Partial<ReviewData> = {
-      updatedAt: new Date(),
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
     };
 
     if (rating !== undefined) {
@@ -131,23 +117,44 @@ export async function PUT(
     }
 
     if (watchedAt !== undefined) {
-      updateData.watchedAt = new Date(watchedAt);
+      updateData.watched_at = new Date(watchedAt).toISOString();
     }
 
-    await doc.ref.update(updateData);
+    const { data: updatedReview, error: updateError } = await supabase
+      .from('reviews')
+      .update(updateData)
+      .eq('id', existingReview.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // Transform to camelCase
+    const transformed = {
+      id: updatedReview.id,
+      userId: updatedReview.user_id,
+      movieId: updatedReview.movie_id,
+      rating: updatedReview.rating,
+      body: updatedReview.body,
+      watchedAt: updatedReview.watched_at,
+      likesCount: updatedReview.likes_count || 0,
+      helpfulCount: updatedReview.helpful_count || 0,
+      notHelpfulCount: updatedReview.not_helpful_count || 0,
+      commentsCount: updatedReview.comments_count || 0,
+      createdAt: updatedReview.created_at,
+      updatedAt: updatedReview.updated_at,
+    };
 
     return NextResponse.json({
       success: true,
-      review: {
-        id: doc.id,
-        ...existingData,
-        ...updateData,
-      },
+      review: transformed,
     });
   } catch (error: any) {
     console.error('Error updating review:', error);
     return NextResponse.json(
-      { error: 'Failed to update review' },
+      { error: error.message || 'Failed to update review' },
       { status: 500 }
     );
   }
@@ -172,34 +179,25 @@ export async function DELETE(
     }
 
     const { movieId } = await params;
-
-    if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Database not initialized' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient();
 
     // Find existing review
-    const reviewsRef = adminDb.collection('reviews');
-    const snapshot = await reviewsRef
-      .where('userId', '==', user.uid)
-      .where('movieId', '==', movieId)
-      .limit(1)
-      .get();
+    const { data: existingReview } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('user_id', user.uid)
+      .eq('movie_id', movieId)
+      .single();
 
-    if (snapshot.empty) {
+    if (!existingReview) {
       return NextResponse.json(
         { error: 'Review not found' },
         { status: 404 }
       );
     }
 
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-
-    // Verify ownership
-    if (data?.userId !== user.uid) {
+    // Verify ownership (RLS should handle this, but double-check)
+    if (existingReview.user_id !== user.uid) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -207,15 +205,21 @@ export async function DELETE(
     }
 
     // Delete review
-    await doc.ref.delete();
+    const { error: deleteError } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', existingReview.id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error deleting review:', error);
     return NextResponse.json(
-      { error: 'Failed to delete review' },
+      { error: error.message || 'Failed to delete review' },
       { status: 500 }
     );
   }
 }
-
