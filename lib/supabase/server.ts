@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
 
 // Lazy-load environment variables to allow dotenv to load them first
 function getSupabaseUrl(): string {

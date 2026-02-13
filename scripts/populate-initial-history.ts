@@ -30,8 +30,7 @@ async function populateInitialHistory() {
   // Check which stocks already have history
   const { data: existingHistory, error: historyError } = await supabase
     .from('market_history')
-    .select('movie_id')
-    .select('movie_id', { count: 'exact' });
+    .select('movie_id');
 
   const stocksWithHistory = new Set(
     existingHistory?.map((h: any) => h.movie_id) || []
