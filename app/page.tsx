@@ -520,24 +520,24 @@ export default function Home() {
 
 
       {/* Top Filmmakers Section - Only show when not searching */}
-      {!debouncedQuery && (
+      {/* {!debouncedQuery && (
         <div className="space-y-4 mb-12 animate-fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">Top Filmmakers</h2>
           </div>
           <CreatorsCarousel className="w-full" role="Director" carouselId="directors-carousel" />
         </div>
-      )}
+      )} */}
 
       {/* Top Actors Section - Only show when not searching */}
-      {!debouncedQuery && (
+      {/* {!debouncedQuery && (
         <div className="space-y-4 mb-12 animate-fade-in">
           <div className="flex items-center justify-between">
             <h2 className="text-xl md:text-2xl font-bold text-foreground marquee-sign section-title">Top Actors</h2>
           </div>
           <CreatorsCarousel className="w-full" role="Actor" carouselId="actors-carousel" />
         </div>
-      )}
+      )} */}
 
       {/* High-Rated Sections - Only show when not searching */}
       {!debouncedQuery && (
